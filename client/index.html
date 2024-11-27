@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Webapp</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<style>
+    body {
+        overflow: hidden;
+        background-image: url('Resources/coffin.png');
+        background-size: cover;
+        background-repeat: no-repeat;
+        height: 100vh;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+    }
+
+    h1 {
+        text-align: center;
+        color: rgb(65, 231, 50);
+        font-size: 3em;
+        margin-top: 20px; /* Adjust the top margin to bring the text down */
+    }
+
+    #img1 {
+        position: absolute;
+        width: 30%;
+        margin-top: 20px; /* Adds space between the text and the image */
+        left: 32%;
+    }
+
+    #img2 {
+        position: absolute;
+        width: 7%;
+        margin-top: 25px; /* Adds space between the text and the image */
+        left: 50%;
+        top: 30%;
+    }
+
+    #img3 {
+        position: absolute;
+        width: 7%;
+        margin-top: 30px; /* Adds space between the text and the image */
+        left: 37%;
+        top: 30%;
+    }
+
+    #enter {
+        position: absolute;
+        bottom: 14%;
+        left: 45%;
+        padding: 15px 30px;
+        background-color: #007BFF;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        border: none;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: all 0.3s ease-in-out;
+    }
+
+    #enter:hover {
+        background-color: #0056b3;
+        transform: translateY(-5px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    #enter:active {
+        background-color: #004085;
+        transform: translateY(0);
+    }
+
+    #enter:focus {
+        outline: none;
+    }
+
+
+    
+</style>
+<body>
+    <h1>Welcome 💀 on 🪦 board 🪦 to our 🕸️ commu 🕸️ ication cha 🕷️ nnel fell 🕷️ ow ghost🕯️ </h1>
+    <main>
+        <img id="img1" src="Resources/R.jpg" alt="WDA Logo">
+        <img id="img2" src="Resources/bluepotion.png" alt="WDA Logo" onclick="choose_username()">
+        <img id="img3" src="Resources/redpotion.jpg" alt="WDA Logo" onclick="choose_avatar()">
+    </main>
+    <button id="enter" onclick="enter()">enter</button>
+    <script src="script.js"></script>
+    <script>
+        function choose_username() {
+            var username = prompt("Please enter your username", "Username");
+            localStorage.setItem("username", username);
+            alert("Your username has been set!");
+        }
+
+
+        function choose_avatar() {
+            var random = Math.floor(Math.random() * 5) + 1;
+        if (random == 1) {
+            localStorage.setItem("avatar", "Resources/Uden tite.png");
+        } else if (random == 2) {
+            localStorage.setItem("avatar", "Resources/Uden titel2.png");
+        } else if (random == 3) {
+            localStorage.setItem("avatar", "Resources/Uden titel3.png");
+        } else if (random == 4) {
+            localStorage.setItem("avatar", "Resources/Uden titel4.png");
+        } else if (random == 5) {
+            localStorage.setItem("avatar", "Resources/5Uden titel.png");
+        }
+        alert("Your avatar has been set!");
+        }
+
+
+
+
+
+        function enter() {
+            var username = localStorage.getItem("username");
+            var avatar = localStorage.getItem("avatar");
+            if (username == null || avatar == null) {
+                alert("Please choose a username and avatar before entering the chat");
+            } else {
+                window.location.href = "chat.html";
+            }
+        }
+
+    </script>
+</body>
+</html>
