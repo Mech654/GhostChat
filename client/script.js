@@ -3,10 +3,9 @@ let currentRoom = null;
 let joinedRooms = [];  // Local array to track rooms the user has joined
 let personalChats = {}; // Store personal chats with usernames
 
-// Update room list in the sidebar
 function updateRoomList() {
     const roomList = document.getElementById('roomList');
-    roomList.innerHTML = '';  // Clear the list
+    roomList.innerHTML = '';
 
     joinedRooms.forEach(room => {
         const roomItem = document.createElement('div');
@@ -17,10 +16,9 @@ function updateRoomList() {
     });
 }
 
-// Update friend list in the right sidebar
 function updateFriendList() {
     const friendList = document.getElementById('friendList');
-    friendList.innerHTML = '';  // Clear the list
+    friendList.innerHTML = '';
 
     for (let friend in personalChats) {
         const friendItem = document.createElement('div');
@@ -31,17 +29,20 @@ function updateFriendList() {
     }
 }
 
-// Join room function
 function joinRoom(roomName) {
     if (roomName && roomName !== currentRoom) {
         currentRoom = roomName;
-        socket.emit('joinRoom', roomName);  // Emit to server to join room
-        document.getElementById('chatWindow').innerHTML = '';  // Clear chat window
-        document.getElementById('currentRoom').textContent = `Current Room: ${roomName}`;  // Display current room
+        socket.emit('joinRoom', roomName, (error) => {
+            if (error) {
+                alert(`Failed to join room: ${error}`);
+            } else {
+                document.getElementById('chatWindow').innerHTML = '';
+                document.getElementById('currentRoom').textContent = `Current Room: ${roomName}`;
+            }
+        });
     }
 }
 
-// Handle message display
 function displayMessage(message) {
     const chatWindow = document.getElementById('chatWindow');
     const div = document.createElement('div');
@@ -50,47 +51,48 @@ function displayMessage(message) {
 
     div.innerHTML = ` 
     <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
-        <img src="${message[2]}" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; margin-right: 10px;">
+        <img src="${message[0]}" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; margin-right: 10px;">
         <div style="background-color: #333; padding: 12px; border-radius: 8px; max-width: 90%; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;">
             <div style="font-weight: bold; color: #7289da;">${sender}</div>
-            <div style="color: #dcddde;">${message[0]}</div>
+            <div style="color: #dcddde;">${message[2]}</div>
         </div>
     </div>
     `;
     chatWindow.append(div);
-    chatWindow.scrollTop = chatWindow.scrollHeight;  // Scroll to the bottom of the chat window
+    chatWindow.scrollTop = chatWindow.scrollHeight;
 
-    // Store personal chat for the sender
     if (!personalChats[sender]) {
         personalChats[sender] = [];
     }
     personalChats[sender].push(message);
-    updateFriendList();  // Update the friend list when a new message is received
+    updateFriendList();
 }
 
-// Listen for incoming messages
 socket.on('message', (message) => {
     displayMessage(message);
 });
 
-// Handle 'Join Room' button functionality
 document.getElementById('joinRoomBtn').addEventListener('click', () => {
     const roomName = prompt("Enter room name:");
     if (roomName) {
         if (!joinedRooms.includes(roomName)) {
-            joinedRooms.push(roomName);  // Add to the list of joined rooms
+            joinedRooms.push(roomName);
             updateRoomList();
         }
         joinRoom(roomName);
     }
 });
 
-document.addEventListener('keydown', function(event) {
+document.addEventListener('keydown', function(event) {  // Send message on Enter key press                                                          
     if (event.key === 'Enter') {
         const input = document.getElementById('chatInput');
-        const message = [input.value, localStorage.getItem('username'), localStorage.getItem('avatar')];
+        const message = [localStorage.getItem('avatar'), localStorage.getItem('username'), input.value];                                                 
         if (message && currentRoom) {
-            socket.emit('sendMessage', currentRoom, message);
+            socket.emit('sendMessage', currentRoom, message, (error) => {
+                if (error) {
+                    console.error(`Failed to send message: ${error}`);
+                }
+            });
         } else if (!currentRoom) {
             alert("Please join a room first!");
         }
