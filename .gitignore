@@ -1,5 +1,5 @@
 # matcher for node_modules directory i alle sub directories
-**/node_modules/
+*node_modules/
 # stop med at pushe databasen til github
 database.db
 
