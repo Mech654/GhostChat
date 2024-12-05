@@ -32,29 +32,25 @@ function updateFriendList() {
 function joinRoom(roomName) {
     if (roomName && roomName !== currentRoom) {
         currentRoom = roomName;
-        socket.emit('joinRoom', roomName, (error) => {
-            if (error) {
-                alert(`Failed to join room: ${error}`);
-            } else {
-                document.getElementById('chatWindow').innerHTML = '';
-                document.getElementById('currentRoom').textContent = `Current Room: ${roomName}`;
-            }
-        });
+        socket.emit('joinRoom', roomName); // No callback
+        document.getElementById('chatWindow').innerHTML = '';
+        document.getElementById('currentRoom').textContent = `Current Room: ${roomName}`;
     }
 }
 
 function displayMessage(message) {
     const chatWindow = document.getElementById('chatWindow');
     const div = document.createElement('div');
-    const sender = message[1];
-    console.log(message);
+    const sender = message[1]; // Username is the second element
+    const avatar = message[0]; // Avatar is the third element
+    const postContent = message[2]; // Post content is the first element
 
     div.innerHTML = ` 
     <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
-        <img src="${message[0]}" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; margin-right: 10px;">
+        <img src="${avatar}" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; margin-right: 10px;">
         <div style="background-color: #333; padding: 12px; border-radius: 8px; max-width: 90%; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;">
             <div style="font-weight: bold; color: #7289da;">${sender}</div>
-            <div style="color: #dcddde;">${message[2]}</div>
+            <div style="color: #dcddde;">${postContent}</div>
         </div>
     </div>
     `;
@@ -86,13 +82,9 @@ document.getElementById('joinRoomBtn').addEventListener('click', () => {
 document.addEventListener('keydown', function(event) {  // Send message on Enter key press                                                          
     if (event.key === 'Enter') {
         const input = document.getElementById('chatInput');
-        const message = [localStorage.getItem('avatar'), localStorage.getItem('username'), input.value];                                                 
+        const message = [input.value, localStorage.getItem('username'), localStorage.getItem('avatar')];                                                  
         if (message && currentRoom) {
-            socket.emit('sendMessage', currentRoom, message, (error) => {
-                if (error) {
-                    console.error(`Failed to send message: ${error}`);
-                }
-            });
+            socket.emit('sendMessage', currentRoom, message); // No callback
         } else if (!currentRoom) {
             alert("Please join a room first!");
         }
