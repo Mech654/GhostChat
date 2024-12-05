@@ -41,6 +41,14 @@ function joinRoom(roomName) {
 function displayMessage(message) {
     const chatWindow = document.getElementById('chatWindow');
     const div = document.createElement('div');
+    const sender = message[1];
+    console.log(message);
+    
+    // innerHTML er en dårlig måde at indsætte HTML på, da det kan være usikkert.
+    // og kan føre til XSS
+    // det kan løses ved lave nye elementer og indsætte dem i stedet
+    // og bruge textContent i stedet for innerHTML hvor der skal indsættes tekst
+/*  
     const sender = message[1]; // Username is the second element
     const avatar = message[0]; // Avatar is the third element
     const postContent = message[2]; // Post content is the first element
@@ -53,7 +61,36 @@ function displayMessage(message) {
             <div style="color: #dcddde;">${postContent}</div>
         </div>
     </div>
-    `;
+    `; */
+    
+    // et Exempel på en måde at løse XSS på
+    const container = document.createElement('div');
+    container.style = "display: flex; align-items: flex-start; margin-bottom: 10px;";
+
+    const img = document.createElement('img');
+    img.src = message[0];
+    img.alt = "Avatar";
+    img.style = "width: 40px; height: 40px; border-radius: 50%; margin-right: 10px;";
+
+    const messageContainer = document.createElement('div');
+    messageContainer.style = "background-color: #333; padding: 12px; border-radius: 8px; max-width: 90%; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;";
+
+    const senderDiv = document.createElement('div');
+    senderDiv.style = "font-weight: bold; color: #7289da;";
+    senderDiv.textContent = sender;
+
+    const messageDiv = document.createElement('div');
+    messageDiv.style = "color: #dcddde;";
+    messageDiv.textContent = message[2];
+    
+    messageContainer.appendChild(senderDiv);
+    messageContainer.appendChild(messageDiv);
+
+    container.appendChild(img);
+    container.appendChild(messageContainer);
+    
+    div.appendChild(container);
+
     chatWindow.append(div);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 
