@@ -1,6 +1,5 @@
 const { Server } = require("socket.io");
 const sqlite3 = require('sqlite3').verbose();
-
 let db = new sqlite3.Database('database.db', (err) => {
   if (err) {
     console.error('Error opening database:', err.message);
@@ -18,6 +17,7 @@ async function checkForTableExist(tableName) {
       name TEXT,
       post TEXT
     )`;
+    
     db.run(query, (err) => {
       if (err) {
         reject(`Error creating table "${tableName}": ${err.message}`);
@@ -31,14 +31,31 @@ async function checkForTableExist(tableName) {
 
 async function insertData(tableName, data) {
   return new Promise((resolve, reject) => {
-    const query = `INSERT INTO "${tableName}" (post, name, avatar) VALUES (?, ?, ?)`;
-    db.run(query, data, (err) => {
+    // Når man inserter data i en database er det en god ide
+    // at santiere dataen først
+    // eller bruge prepared statements.
+    /*
+    db.run(preparedStmt, data, (err) => {
       if (err) {
         reject(`Error inserting data into "${tableName}": ${err.message}`);
       } else {
         resolve(`Data inserted into "${tableName}".`);
       }
     });
+    */
+
+    // med Prepared statements
+    // evt. lav 3 tables med med posts, users channels hvor posts referer til users og den channel som beskeden er i
+    const preparedStmt = db.prepare('INSERT INTO ' + tableName + ' (post, name, avatar) VALUES (?, ?, ?)');
+    preparedStmt.finalize();
+    preparedStmt.run(data, (err) => {
+      if (err) {
+        reject(`Error inserting data into "${tableName}": ${err.message}`);
+      } else {
+        resolve(`Data inserted into "${tableName}".`);
+      }
+    })
+
   });
 }
 
@@ -46,6 +63,7 @@ async function insertData(tableName, data) {
 async function getData(tableName) {
   return new Promise((resolve, reject) => {
     const query = `SELECT * FROM "${tableName}"`;
+    console.log(query);
     db.all(query, (err, rows) => {
       if (err) {
         reject(`Error selecting data from "${tableName}": ${err.message}`);
@@ -107,7 +125,7 @@ io.on('connection', (socket) => {
       // Broadcast message to room and to the sender
       socket.to(roomName).emit('message', message);
       socket.emit('message', message);
-
+      console.log(`Message sent to room "${roomName}":`, message);
       
       //await insertData(roomName, message); // Crashes here
     } catch (err) {
