@@ -1,5 +1,7 @@
-/server/node_modules
-/client/node_modules
+# matcher for node_modules directory i alle sub directories
+**/node_modules/
+# stop med at pushe databasen til github
+database.db
 
 
 
