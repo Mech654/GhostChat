@@ -1,7 +1,46 @@
-const { Server } = require("socket.io");
+require('dotenv').config({ path: 'C:/Users/ahme1636/OneDrive - Syddansk Erhvervsskole/Dokumenter/Chat webapp/.env' });
+const crypto = require('crypto');
 const sqlite3 = require('sqlite3').verbose();
+const { Server } = require('socket.io');
 
-let db = new sqlite3.Database('database.db', (err) => {
+// AES-256-CBC encryption setup
+const ALGORITHM = 'aes-256-cbc';
+const IV_LENGTH = 16;
+const key = process.env.KEY;
+console.log('KEY:', key);
+
+const ENCRYPTION_KEY = crypto.createHash('sha256')
+  .update(key)
+  .digest('base64').substr(0, 32); // Hash the key to ensure it's 32 bytes long
+
+// Function to encrypt data
+function encrypt(text) {
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY), iv);
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  return iv.toString('hex') + ':' + encrypted;
+}
+
+// Function to decrypt data
+function decrypt(text) {
+  const parts = text.split(':');
+  const iv = Buffer.from(parts.shift(), 'hex');
+  const encryptedText = parts.join(':');
+  const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY), iv);
+  let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+
+
+
+
+
+
+
+// SQLite database setup
+let db = new sqlite3.Database('C:/Users/ahme1636/Desktop/database.db', (err) => {
   if (err) {
     console.error('Error opening database:', err.message);
   } else {
@@ -9,6 +48,7 @@ let db = new sqlite3.Database('database.db', (err) => {
   }
 });
 
+// Function to check if table exists or create it
 async function checkForTableExist(tableName) {
   console.log(`Checking if table "${tableName}" exists...`);
   return new Promise((resolve, reject) => {
@@ -31,42 +71,30 @@ async function checkForTableExist(tableName) {
   });
 }
 
+// Function to insert data into table
 async function insertData(tableName, data) {
-  console.log(`Inserting data into table "${tableName}":`, data);
+  console.log(`Inserting encrypted data into table "${tableName}":`, data);
   return new Promise((resolve, reject) => {
     // Når man inserter data i en database er det en god ide
     // at santiere dataen først
     // eller bruge prepared statements.
     /*
     const query = `INSERT INTO "${tableName}" (avatar, name, post) VALUES (?, ?, ?)`;
-    db.run(query, [data.avatar, data.name, data.post], (err) => {
+    db.run(query, [data.avatar, data.name, encrypt(data.post)], (err) => {
       if (err) {
         console.error(`Error inserting data into "${tableName}":`, err.message);
         reject(err);
       } else {
-        console.log(`Data inserted into "${tableName}".`);
+        console.log(`Encrypted data inserted into "${tableName}".`);
         resolve();
       }
     });
-    */
-
-    // med Prepared statements
-    // evt. lav 3 tables med med posts, users channels hvor posts referer til users og den channel som beskeden er i
-    const preparedStmt = db.prepare('INSERT INTO ' + tableName + ' (post, name, avatar) VALUES (?, ?, ?)');
-    preparedStmt.finalize();
-    preparedStmt.run(data, (err) => {
-      if (err) {
-        reject(`Error inserting data into "${tableName}": ${err.message}`);
-      } else {
-        resolve(`Data inserted into "${tableName}".`);
-      }
-    })
-
   });
 }
 
+// Function to fetch encrypted data from table
 async function getData(tableName) {
-  console.log(`Fetching data from table "${tableName}"...`);
+  console.log(`Fetching encrypted data from table "${tableName}"...`);
   return new Promise((resolve, reject) => {
     const query = `SELECT * FROM "${tableName}"`;
     console.log(query);
@@ -75,13 +103,17 @@ async function getData(tableName) {
         console.error(`Error selecting data from "${tableName}":`, err.message);
         reject(err);
       } else {
-        console.log(`Fetched data from "${tableName}":`, rows);
+        console.log(`Fetched encrypted data from "${tableName}":`, rows);
+        rows.forEach(row => {
+          row.post = decrypt(row.post); // Decrypt the post data
+        });
         resolve(rows);
       }
     });
   });
 }
 
+// Socket.IO setup
 const io = new Server(3000, {
   cors: {
     origin: ["http://127.0.0.1:5500", "http://localhost:5500"],
@@ -118,13 +150,13 @@ io.on('connection', (socket) => {
             console.log(`${socket.id} has received previous messages for room "${roomName}"`);
         } else {
             console.log(`No messages found in room "${roomName}".`);
-            socket.emit('message', ["", "System", "No messages yet in this room."]);
+            socket.emit('message', ["Resources/admin.webp", "System", "No messages yet in this room."]);
         }
-
     } catch (err) {
         console.error(`Error in 'joinRoom' for room "${roomName}":`, err.message);
     }
   });
+
   socket.on('sendMessage', async (roomName, message) => {
     console.log(`Received message in room "${roomName}" from client ${socket.id}:`, message);
     try {
@@ -144,8 +176,7 @@ io.on('connection', (socket) => {
     } catch (err) {
         console.error(`Error in 'sendMessage' for room "${roomName}":`, err.message);
     }
-});
-
+  });
 
   socket.on('leaveRoom', (roomName) => {
     console.log(`${socket.id} is leaving room: ${roomName}`);

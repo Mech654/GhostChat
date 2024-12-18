@@ -19,7 +19,6 @@ function updateRoomList() {
 function updateFriendList() {
     const friendList = document.getElementById('friendList');
     friendList.innerHTML = '';
-
     for (let friend in personalChats) {
         const friendItem = document.createElement('div');
         friendItem.classList.add('friend-item');
@@ -37,7 +36,7 @@ function joinRoom(roomName) {
         document.getElementById('currentRoom').textContent = `Current Room: ${roomName}`;
     }
 }
-
+const username = localStorage.getItem('username');
 function displayMessage(message) {
     const chatWindow = document.getElementById('chatWindow');
     const div = document.createElement('div');
@@ -55,7 +54,7 @@ function displayMessage(message) {
 
     div.innerHTML = ` 
     <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
-        <img src="${avatar}" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; margin-right: 10px;">
+        <img src="${avatar}" alt="Avatar" style="width: 60px; height: 60px; border-radius: 50%; margin-right: 10px;">
         <div style="background-color: #333; padding: 12px; border-radius: 8px; max-width: 90%; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;">
             <div style="font-weight: bold; color: #7289da;">${sender}</div>
             <div style="color: #dcddde;">${postContent}</div>
@@ -94,11 +93,14 @@ function displayMessage(message) {
     chatWindow.append(div);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 
-    if (!personalChats[sender]) {
+    if (sender !== username && sender !== "System" && !personalChats[sender]) {
         personalChats[sender] = [];
     }
-    personalChats[sender].push(message);
-    updateFriendList();
+
+    if(sender !== "System" && username !== sender) {
+        personalChats[sender].push(message);
+        updateFriendList();
+    }
 }
 
 socket.on('message', (message) => {

@@ -1,15 +1,19 @@
 {
-    "name": "chat-webapp",
-    "version": "1.0.0",
-    "description": "",
-    "main": "server.js",
-    "scripts": {
-        "devStart": "nodemon server.js"
-    },
-    "author": "",
-    "license": "ISC",
-    "dependencies": {
-        "socket.io": "^4.8.1",
-        "sqlite3": "^5.1.7"
-    }
+  "name": "chat-webapp",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "devStart": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^11.6.0",
+    "dotenv": "^16.4.7",
+    "socket.io": "^4.8.1",
+    "sqlite3": "^5.1.7"
+  },
+  "keywords": [],
+  "description": ""
 }
