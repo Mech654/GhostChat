@@ -1,7 +1,7 @@
 const { Server } = require("socket.io");
 const sqlite3 = require('sqlite3').verbose();
 
-let db = new sqlite3.Database('C:/Users/ahme1636/Desktop/database.db', (err) => {
+let db = new sqlite3.Database('database.db', (err) => {
   if (err) {
     console.error('Error opening database:', err.message);
   } else {
@@ -18,6 +18,7 @@ async function checkForTableExist(tableName) {
       name TEXT,
       post TEXT
     )`;
+    
     db.run(query, (err) => {
       if (err) {
         console.error(`Error creating table "${tableName}":`, err.message);
@@ -33,6 +34,10 @@ async function checkForTableExist(tableName) {
 async function insertData(tableName, data) {
   console.log(`Inserting data into table "${tableName}":`, data);
   return new Promise((resolve, reject) => {
+    // Når man inserter data i en database er det en god ide
+    // at santiere dataen først
+    // eller bruge prepared statements.
+    /*
     const query = `INSERT INTO "${tableName}" (avatar, name, post) VALUES (?, ?, ?)`;
     db.run(query, [data.avatar, data.name, data.post], (err) => {
       if (err) {
@@ -43,6 +48,20 @@ async function insertData(tableName, data) {
         resolve();
       }
     });
+    */
+
+    // med Prepared statements
+    // evt. lav 3 tables med med posts, users channels hvor posts referer til users og den channel som beskeden er i
+    const preparedStmt = db.prepare('INSERT INTO ' + tableName + ' (post, name, avatar) VALUES (?, ?, ?)');
+    preparedStmt.finalize();
+    preparedStmt.run(data, (err) => {
+      if (err) {
+        reject(`Error inserting data into "${tableName}": ${err.message}`);
+      } else {
+        resolve(`Data inserted into "${tableName}".`);
+      }
+    })
+
   });
 }
 
@@ -50,6 +69,7 @@ async function getData(tableName) {
   console.log(`Fetching data from table "${tableName}"...`);
   return new Promise((resolve, reject) => {
     const query = `SELECT * FROM "${tableName}"`;
+    console.log(query);
     db.all(query, (err, rows) => {
       if (err) {
         console.error(`Error selecting data from "${tableName}":`, err.message);
