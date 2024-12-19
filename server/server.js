@@ -78,7 +78,7 @@ async function insertData(tableName, data) {
     // Når man inserter data i en database er det en god ide
     // at santiere dataen først
     // eller bruge prepared statements.
-    /*
+    
     const query = `INSERT INTO "${tableName}" (avatar, name, post) VALUES (?, ?, ?)`;
     db.run(query, [data.avatar, data.name, encrypt(data.post)], (err) => {
       if (err) {
@@ -116,7 +116,7 @@ async function getData(tableName) {
 // Socket.IO setup
 const io = new Server(3000, {
   cors: {
-    origin: ["http://127.0.0.1:5500", "http://localhost:5500"],
+    origin: ["http://127.0.0.1:5501", "http://localhost:5500"],
     methods: ["GET", "POST"],
     credentials: true
   }
