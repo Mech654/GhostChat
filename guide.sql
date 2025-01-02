@@ -60,4 +60,3 @@ SELECT * from Users u left join UserChannels uc On u.id = uc.user_id where u.id 
 
 -- get all user posts
 SELEcT * FROM Posts p where user_id = 1;
-

@@ -1,4 +1,5 @@
-require('dotenv').config({ path: 'C:/Users/ahme1636/OneDrive - Syddansk Erhvervsskole/Dokumenter/Chat webapp/.env' });
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 const crypto = require('crypto');
 const sqlite3 = require('sqlite3').verbose();
 const { Server } = require('socket.io');
@@ -12,6 +13,7 @@ console.log('KEY:', key);
 const ENCRYPTION_KEY = crypto.createHash('sha256')
   .update(key)
   .digest('base64').substr(0, 32); // Hash the key to ensure it's 32 bytes long
+
 
 // Function to encrypt data
 function encrypt(text) {
@@ -37,18 +39,28 @@ function decrypt(text) {
 
 
 
-
-
 // SQLite database setup
-let db = new sqlite3.Database('C:/Users/ahme1636/Desktop/database.db', (err) => {
+// 1. Remember to change the path. 
+// 2. Be careful if you want to put .db in your workspace because some local server extensions in vscode make the site refresh when binard code is changed.
+
+const absoluteDbPath = path.resolve(
+  'C:\Users\ahme1636\Desktop\database.db'
+);
+
+console.log('Database Path:', absoluteDbPath);
+
+// Initialize the SQLite database
+let db = new sqlite3.Database(absoluteDbPath, (err) => {
   if (err) {
-    console.error('Error opening database:', err.message);
+      console.error('Error opening database at path:', absoluteDbPath, '\n', err.message);
   } else {
-    console.log('Connected to the SQLite database.');
+      console.log('Connected to the SQLite database at:', absoluteDbPath);
   }
 });
 
-// Function to check if table exists or create it
+
+
+// Function to check if table exists and/or create it
 async function checkForTableExist(tableName) {
   console.log(`Checking if table "${tableName}" exists...`);
   return new Promise((resolve, reject) => {
@@ -70,6 +82,7 @@ async function checkForTableExist(tableName) {
     });
   });
 }
+
 
 // Function to insert data into table
 async function insertData(tableName, data) {
