@@ -1,96 +1,292 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Webapp</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dark Themed Login & Signup</title>
+  <style>
+    /* Global Styles */
     body {
-        overflow: hidden;
-        background-image: url('Resources/coffin.png');
-        background-size: cover;
-        background-repeat: no-repeat;
-        height: 100vh;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial', sans-serif;
+      background-color: #121212;
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
     }
 
-    h1 {
-        text-align: center;
-        color: rgb(55, 0, 255);
-        font-size: 3em;
-        margin-top: 20px; /* Adjust the top margin to bring the text down */
+    /* Login Container */
+    .login-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      width: 100%;
     }
 
-    #img1 {
-        position: absolute;
-        width: 30%;
-        margin-top: 20px; /* Adds space between the text and the image */
-        left: 32%;
+    /* Login/Signup Box */
+    .auth-box {
+      background: #1e1e1e;
+      padding: 30px 40px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+      max-width: 400px;
+      width: 100%;
     }
 
-    #img2 {
-        position: absolute;
-        width: 7%;
-        margin-top: 25px; /* Adds space between the text and the image */
-        left: 50%;
-        top: 30%;
+    .auth-box h1 {
+      margin-bottom: 20px;
+      font-size: 24px;
+      text-align: center;
+      color: #e0e0e0;
     }
 
-    #img3 {
-        position: absolute;
-        width: 7%;
-        margin-top: 30px; /* Adds space between the text and the image */
-        left: 37%;
-        top: 30%;
+    /* Input Group */
+    .input-group {
+      margin-bottom: 20px;
     }
 
-    #enter {
-        position: absolute;
-        bottom: 14%;
-        left: 45%;
-        padding: 15px 30px;
-        background-color: #007BFF;
-        color: white;
-        font-size: 16px;
-        font-weight: bold;
-        border: none;
-        border-radius: 30px;
-        cursor: pointer;
-        transition: all 0.3s ease-in-out;
+    .input-group label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 5px;
+      color: #bdbdbd;
     }
 
-    #enter:hover {
-        background-color: #0056b3;
-        transform: translateY(-5px);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    .input-group input {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      border: none;
+      border-radius: 5px;
+      background: #2c2c2c;
+      color: #ffffff;
+      outline: none;
     }
 
-    #enter:active {
-        background-color: #004085;
-        transform: translateY(0);
+    .input-group input::placeholder {
+      color: #757575;
     }
 
-    #enter:focus {
-        outline: none;
+    /* Button */
+    .btn {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #ffffff;
+      background: #6200ea;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s ease;
     }
 
+    .btn:hover {
+      background: #3700b3;
+    }
 
-    
-</style>
+    /* Switch Link */
+    .switch-link {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 14px;
+      color: #bdbdbd;
+    }
+
+    .switch-link a {
+      color: #6200ea;
+      text-decoration: none;
+    }
+
+    .switch-link a:hover {
+      text-decoration: underline;
+    }
+
+    /* Image Selection Overlay */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .overlay.active {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .image-options {
+      display: flex;
+      gap: 15px;
+    }
+
+    .image-options img {
+      width: 100px;
+      height: 100px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .image-options img:hover {
+      transform: scale(1.1);
+    }
+  </style>
+</head>
 <body>
-    <h1>Welcome 💀 on 🪦 board 🪦 to our 🕸️ commu 🕸️ ication cha 🕷️ nnel fell 🕷️ ow ghost🕯️ </h1>
-    <main>
-        <img id="img1" src="Resources/R.jpg" alt="WDA Logo">
-        <img id="img2" src="Resources/bluepotion.png" alt="WDA Logo" onclick="choose_username()">
-        <img id="img3" src="Resources/redpotion.jpg" alt="WDA Logo" onclick="choose_avatar()">
-    </main>
-    <button id="enter" onclick="enter()">enter</button>
-    <script src="index.js"></script>
+  <div class="login-container">
+    <div class="auth-box" id="authBox">
+      <h1 id="formTitle">Login</h1>
+      <form id="authForm">
+        <div class="input-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" placeholder="Enter your username" required>
+        </div>
+        <div class="input-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="Enter your password" required>
+        </div>
+        <div class="input-group" id="confirmPasswordGroup" style="display: none;">
+          <label for="confirmPassword">Confirm Password</label>
+          <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password">
+        </div>
+        <button type="submit" class="btn" id="submitButton">Login</button>
+        <p class="switch-link">
+          Don't have an account? <a href="#" id="switchLink">Sign up</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <div class="overlay" id="imageOverlay">
+    <div class="image-options" id="imageOptions">
+      <!-- Images will be dynamically loaded here -->
+    </div>
+  </div>
+
+  <script>
+    // Element references
+    const formTitle = document.getElementById('formTitle');
+    const authForm = document.getElementById('authForm');
+    const confirmPasswordGroup = document.getElementById('confirmPasswordGroup');
+    const submitButton = document.getElementById('submitButton');
+    const switchLink = document.getElementById('switchLink');
+    const imageOverlay = document.getElementById('imageOverlay');
+    const imageOptions = document.getElementById('imageOptions');
+
+    let isLoginMode = true;
+
+    // Placeholder image sources
+    const imageSources = [
+      'Resources/Uden titel.png',
+      'Resources/Uden titel2.png',
+      'Resources/Uden titel3.png',
+      'Resources/Uden titel4.png',
+    ];
+
+    // Switch between login and signup modes
+    switchLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      isLoginMode = !isLoginMode;
+
+      if (isLoginMode) {
+        formTitle.textContent = 'Login';
+        confirmPasswordGroup.style.display = 'none';
+        submitButton.textContent = 'Login';
+        switchLink.textContent = "Don't have an account? Sign up";
+      } else {
+        formTitle.textContent = 'Sign Up';
+        confirmPasswordGroup.style.display = 'block';
+        submitButton.textContent = 'Sign Up';
+        switchLink.textContent = 'Already have an account? Login';
+      }
+    });
+
+    // Form submission logic
+    authForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const confirmPassword = document.getElementById('confirmPassword')?.value.trim();
+
+      if (!username || !password) {
+        alert('Please fill in all required fields.');
+        return;
+      }
+
+      if (!isLoginMode && password !== confirmPassword) {
+        alert('Passwords do not match.');
+        return;
+      }
+
+      if (!isLoginMode) {
+        localStorage.setItem('username', document.getElementById('username').value.trim());
+        localStorage.setItem('password', document.getElementById('password').value.trim());
+        // Show image selection overlay
+        imageOverlay.classList.add('active');
+
+        // Populate image options
+        imageOptions.innerHTML = '';
+        imageSources.forEach((src) => {
+          const img = document.createElement('img');
+          img.src = src;
+          img.alt = 'Image Option';
+          img.addEventListener('click', () => selectImage(src));
+          imageOptions.appendChild(img);
+        });
+      } else {
+        console.log('Login successful:', { username, password });
+        alert('Login successful!');
+      }
+
+      // Clear the form
+      authForm.reset();
+    });
+
+    function selectImage(selectedSrc) {
+        localStorage.setItem('profileImage', selectedSrc);
+        // Hide overlay
+        imageOverlay.classList.remove('active');
+
+        final();
+
+      }
+
+    async function final() {
+      const socket = io('http://localhost:3000');
+      await new Promise((resolve, reject) => {
+        socket.emit('login', {
+        username: localStorage.getItem('username'),
+        password: localStorage.getItem('password'),
+        profileImage: localStorage.getItem('profileImage'),
+        }, (response) => {
+        if (response.success) {
+          resolve();
+        } else {
+          reject(new Error('Login failed'));
+        }
+        });
+      });
+    }
+
+      
+
+
+    </script>
 </body>
 </html>

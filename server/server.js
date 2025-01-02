@@ -43,40 +43,90 @@ function decrypt(text) {
 // 1. Remember to change the path. 
 // 2. Be careful if you want to put .db in your workspace because some local server extensions in vscode make the site refresh when binard code is changed.
 
-const absoluteDbPath = path.resolve(
-  'C:\Users\ahme1636\Desktop\database.db'
-);
 
-console.log('Database Path:', absoluteDbPath);
+// Define the absolute path where the database will be stored, including the file name 'database.db'
+const absoluteDbPath = path.resolve('C:\\Users\\ahme1636\\Desktop', 'database.db');
 
 // Initialize the SQLite database
 let db = new sqlite3.Database(absoluteDbPath, (err) => {
   if (err) {
-      console.error('Error opening database at path:', absoluteDbPath, '\n', err.message);
+    console.error('Error opening database at path:', absoluteDbPath, '\n', err.message);
   } else {
-      console.log('Connected to the SQLite database at:', absoluteDbPath);
+    console.log('Connected to the SQLite database at:', absoluteDbPath);
   }
 });
 
-
-
-// Function to check if table exists and/or create it
-async function checkForTableExist(tableName) {
-  console.log(`Checking if table "${tableName}" exists...`);
+async function initializeAllTables() {
   return new Promise((resolve, reject) => {
-    const query = `CREATE TABLE IF NOT EXISTS "${tableName}" (
-      id INTEGER PRIMARY KEY,
-      avatar TEXT,
-      name TEXT,
-      post TEXT
-    )`;
-    
-    db.run(query, (err) => {
+    const queries = [
+      `CREATE TABLE IF NOT EXISTS Users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL, 
+        avatar TEXT
+      )`,
+      
+      `CREATE TABLE IF NOT EXISTS Posts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        message TEXT NOT NULL,
+        user_id INTEGER,
+        channel_id INTEGER,
+        FOREIGN KEY (user_id) REFERENCES Users(id),
+        FOREIGN KEY (channel_id) REFERENCES Channels(id)
+      )`,
+      
+      `CREATE TABLE IF NOT EXISTS Channels (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        Channelname TEXT UNIQUE NOT NULL,
+        Private BOOLEAN DEFAULT 0
+      )`,
+      
+      `CREATE TABLE IF NOT EXISTS PublicChannels (
+        user_id INTEGER,
+        channel_id INTEGER,
+        PRIMARY KEY (user_id, channel_id),
+        FOREIGN KEY (user_id) REFERENCES Users(id),
+        FOREIGN KEY (channel_id) REFERENCES Channels(id)
+      )`,
+      
+      `CREATE TABLE IF NOT EXISTS PrivateChannels (
+        channel_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id1 INTEGER,
+        user_id2 INTEGER,
+        FOREIGN KEY (user_id1) REFERENCES Users(id),
+        FOREIGN KEY (user_id2) REFERENCES Users(id)
+      )`
+    ];
+
+    queries.forEach((query, index) => {
+      db.run(query, (err) => {
+        if (err) {
+          console.error(`Error creating table ${index + 1}:`, err.message);
+          reject(err);
+        } else {
+          console.log(`Successfully created table ${index + 1}`);
+        }
+      });
+    });
+    resolve();
+  });
+}
+
+
+
+
+async function savePost(message, user_id, channel_id) {
+  return new Promise((resolve, reject) => {
+    const query = `
+        INSERT INTO Posts (message, user_id, channel_id)
+        VALUES (?, ?, ?);
+        `;
+
+    db.run(query, [message, user_id, channel_id], function (err) {
       if (err) {
-        console.error(`Error creating table "${tableName}":`, err.message);
+        console.error(`Error:`, err.message);
         reject(err);
       } else {
-        console.log(`Table "${tableName}" checked/created.`);
+        console.log("Successfully saved post");
         resolve();
       }
     });
@@ -84,47 +134,89 @@ async function checkForTableExist(tableName) {
 }
 
 
-// Function to insert data into table
-async function insertData(tableName, data) {
-  console.log(`Inserting encrypted data into table "${tableName}":`, data);
+
+
+
+
+async function saveInPublicChannels(user_id, channel_id) {
   return new Promise((resolve, reject) => {
-    // Når man inserter data i en database er det en god ide
-    // at santiere dataen først
-    // eller bruge prepared statements.
-    
-    const query = `INSERT INTO "${tableName}" (avatar, name, post) VALUES (?, ?, ?)`;
-    db.run(query, [data.avatar, data.name, encrypt(data.post)], (err) => {
+    const query = `
+        INSERT INTO PublicChannels (user_id, channel_id)
+        VALUES (?, ?);
+        `;
+    db.run(query, [user_id, channel_id], function (err) {
       if (err) {
-        console.error(`Error inserting data into "${tableName}":`, err.message);
+        console.error(`Error:`, err.message);
         reject(err);
       } else {
-        console.log(`Encrypted data inserted into "${tableName}".`);
+        console.log("Successfully saved in public channels");
+        resolve();
+      }
+    }
+    );
+  });
+}
+
+async function saveInPrivateChannels(user_id1, user_id2) {
+  return new Promise((resolve, reject) => {
+    const query = `
+        INSERT INTO PrivateChannels (user_id1, user_id2)
+        VALUES (?, ?);
+        `;
+    db.run(query, [user_id1, user_id2], function (err) {
+      if (err) {
+        console.error(`Error:`, err.message);
+        reject(err);
+      } else {
+        console.log("Successfully saved in private channels");
+        resolve();
+      }
+    }
+    );
+  });
+}
+
+
+async function saveInChannel(channelname, private) {
+  return new Promise((resolve, reject) => {
+    const query = `
+        INSERT INTO Channels (channelname, private)
+        VALUES (?, ?);
+    `;
+    db.run(query, [channelname, private], function (err) {
+      if (err) {
+        console.error(`Error:`, err.message);
+        reject(err);
+      } else {
+        console.log("Successfully saved channel");
+        const channel_id = this.lastID; // Capture the channel_id from the inserted row
         resolve();
       }
     });
   });
 }
 
-// Function to fetch encrypted data from table
-async function getData(tableName) {
-  console.log(`Fetching encrypted data from table "${tableName}"...`);
+
+async function saveUser(username, avatar) {
   return new Promise((resolve, reject) => {
-    const query = `SELECT * FROM "${tableName}"`;
-    console.log(query);
-    db.all(query, (err, rows) => {
+    const query = `
+        INSERT INTO Users (username, avatar)
+        VALUES (?, ?);
+    `;
+    db.run(query, [username, avatar], function (err) {
       if (err) {
-        console.error(`Error selecting data from "${tableName}":`, err.message);
+        console.error(`Error:`, err.message);
         reject(err);
       } else {
-        console.log(`Fetched encrypted data from "${tableName}":`, rows);
-        rows.forEach(row => {
-          row.post = decrypt(row.post); // Decrypt the post data
-        });
-        resolve(rows);
+        console.log("Successfully saved user");
+        resolve();
       }
     });
   });
 }
+
+
+
 
 // Socket.IO setup
 const io = new Server(3000, {
@@ -203,4 +295,8 @@ io.on('connection', (socket) => {
   });
 });
 
-console.log('Server is running on port 3000');
+
+
+savePost("Hello", 1, 1);
+initializeAllTables();
+

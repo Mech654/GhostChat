@@ -3,7 +3,7 @@
 CREATE TABLE Users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,  -- Changed to TEXT for usernames
-    avatar TEXT,
+    avatar TEXT
 );
 
 CREATE TABLE Posts (
@@ -18,7 +18,7 @@ CREATE TABLE Posts (
 CREATE TABLE Channels (
     id INTEGER PRIMARY KEY AUTOINCREMENT,  -- Now auto-incremented for channel IDs
     Channelname TEXT UNIQUE NOT NULL,
-
+    private BOOLEAN DEFAULT 0
 );
 
 -- Table for many-to-many relationship between users and public channels
@@ -32,7 +32,7 @@ CREATE TABLE PublicChannels (
 
 -- Table for private channels (one-to-one messaging between users)
 CREATE TABLE PrivateChannels (
-    channel_id INTEGER PRIMARY KEY AUTOINCREMENT,  -- Auto-increment for channel ID
+    channel_id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id1 INTEGER,  -- First user (INTEGER)
     user_id2 INTEGER,  -- Second user (INTEGER)
     FOREIGN KEY (user_id1) REFERENCES Users(id),
