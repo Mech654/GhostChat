@@ -178,6 +178,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <script>
     // Element references
     const formTitle = document.getElementById('formTitle');
@@ -217,7 +218,7 @@
     });
 
     // Form submission logic
-    authForm.addEventListener('submit', (e) => {
+    authForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const username = document.getElementById('username').value.trim();
@@ -229,14 +230,16 @@
         return;
       }
 
-      if (!isLoginMode && password !== confirmPassword) {
-        alert('Passwords do not match.');
-        return;
-      }
-
       if (!isLoginMode) {
-        localStorage.setItem('username', document.getElementById('username').value.trim());
-        localStorage.setItem('password', document.getElementById('password').value.trim());
+        // Sign up logic
+        if (password !== confirmPassword) {
+          alert('Passwords do not match.');
+          return;
+        }
+
+        localStorage.setItem('username', username);
+        localStorage.setItem('password', password);
+
         // Show image selection overlay
         imageOverlay.classList.add('active');
 
@@ -250,8 +253,8 @@
           imageOptions.appendChild(img);
         });
       } else {
-        console.log('Login successful:', { username, password });
-        alert('Login successful!');
+        // Login logic
+        await login(); // Call login function here
       }
 
       // Clear the form
@@ -259,34 +262,41 @@
     });
 
     function selectImage(selectedSrc) {
-        localStorage.setItem('profileImage', selectedSrc);
-        // Hide overlay
-        imageOverlay.classList.remove('active');
+      localStorage.setItem('profileImage', selectedSrc);
+      // Hide overlay
+      imageOverlay.classList.remove('active');
 
-        final();
+      register();
+    }
 
-      }
-
-    async function final() {
+    async function login() {
       const socket = io('http://localhost:3000');
-      await new Promise((resolve, reject) => {
-        socket.emit('login', {
+      socket.emit('login', {
+        username: document.getElementById('username').value.trim(),
+        password: document.getElementById('password').value.trim(),
+      }, (response) => {
+        if (response.success) {
+          window.location.href = 'chat.html';
+        } else {
+          alert('Login failed: ' + response.message);
+        }
+      });
+    }
+
+    async function register() {
+      const socket = io('http://localhost:3000');
+      socket.emit('register', {
         username: localStorage.getItem('username'),
         password: localStorage.getItem('password'),
         profileImage: localStorage.getItem('profileImage'),
-        }, (response) => {
+      }, (response) => {
         if (response.success) {
-          resolve();
+          window.location.href = 'chat.html';
         } else {
-          reject(new Error('Login failed'));
+          alert('Registration failed: ' + response.message);
         }
-        });
       });
     }
-//dawdaw
-      
-
-
-    </script>
+  </script>
 </body>
 </html>

@@ -131,6 +131,8 @@ document.addEventListener('keydown', function(event) {  // Send message on Enter
     }
 });
 
-if (!localStorage.getItem('avatar') || !localStorage.getItem('username')) {
+
+
+if (!localStorage.getItem('username') && !localStorage.getItem('password')) {
     window.location.href = 'index.html';
 }

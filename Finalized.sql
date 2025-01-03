@@ -3,6 +3,7 @@
 CREATE TABLE Users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,  -- Changed to TEXT for usernames
+    password TEXT NOT NULL,
     avatar TEXT
 );
 

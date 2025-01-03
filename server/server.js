@@ -61,7 +61,8 @@ async function initializeAllTables() {
     const queries = [
       `CREATE TABLE IF NOT EXISTS Users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL, 
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL, 
         avatar TEXT
       )`,
       
@@ -197,19 +198,43 @@ async function saveInChannel(channelname, private) {
 }
 
 
-async function saveUser(username, avatar) {
-  return new Promise((resolve, reject) => {
+async function saveUser(username, password, avatar) {
+  return new Promise((resolve) => {
     const query = `
-        INSERT INTO Users (username, avatar)
-        VALUES (?, ?);
+        INSERT INTO Users (username, password, avatar)
+        VALUES (?, ?, ?);
     `;
-    db.run(query, [username, avatar], function (err) {
+    db.run(query, [username, password, avatar], function (err) {
       if (err) {
         console.error(`Error:`, err.message);
-        reject(err);
+        resolve(false); // Return false on error
       } else {
         console.log("Successfully saved user");
-        resolve();
+        resolve(true); // Return true on success
+      }
+    });
+  });
+}
+
+
+async function getUser(username, password) {
+  return new Promise((resolve, reject) => {
+    const query = `
+        SELECT * FROM Users
+        WHERE username = ? AND password = ?;
+    `;
+    db.get(query, [username, password], (err, row) => {
+      if (err) {
+        console.error(`Error:`, err.message);
+        reject(false); // On error, reject with false
+      } else {
+        if (row) {
+          console.log("User exists and password is correct");
+          resolve(true); // User exists and password matches
+        } else {
+          console.log("User does not exist or password is incorrect");
+          resolve(false); // User doesn't exist or password doesn't match
+        }
       }
     });
   });
@@ -227,7 +252,7 @@ const io = new Server(3000, {
   }
 });
 
-const socketRooms = {};
+
 
 io.on('connection', (socket) => {
   console.log(`Client connected with id: ${socket.id}`);
@@ -293,10 +318,48 @@ io.on('connection', (socket) => {
       console.error(`Error in 'leaveRoom' for room "${roomName}":`, err.message);
     }
   });
+
+  socket.on('register', async (data, callback) => {
+    const { username, password, profileImage } = data;
+    console.log(`Received registration request for user: ${username}`);
+
+    try {
+      const user = await saveUser(username, password, profileImage);
+      if (user) {
+        callback({ success: true, user });
+        console.log(`User ${username} successfully registered`);
+      } else {
+        callback({ success: false, message: 'Registration failed' });
+        console.log(`User ${username} registration failed`);
+      }
+    } catch (err) {
+      console.error(`Error in 'register' for user "${username}":`, err.message);
+      callback({ success: false, message: err.message });
+    }
+  });
+
+  socket.on('login', async (data, callback) => {
+    const { username, password } = data;
+    console.log(`Received login request for user: ${username}`);
+
+    try {
+      const user = await getUser(username, password);
+      if (user) {
+        callback({ success: true, user });
+        console.log(`User ${username} successfully logged in`);
+      } else {
+        callback({ success: false, message: 'Login failed' });
+        console.log(`User ${username} login failed`);
+      }
+    } catch (err) {
+      console.error(`Error in 'login' for user "${username}":`, err.message);
+      callback({ success: false, message: err.message });
+    }
+  });
 });
 
 
 
-savePost("Hello", 1, 1);
-initializeAllTables();
+
+//initializeAllTables();
 
