@@ -36,7 +36,7 @@ function decrypt(text) {
 }
 
 
-
+let socketRooms = {};
 
 
 // SQLite database setup
@@ -62,10 +62,10 @@ async function initializeAllTables() {
       `CREATE TABLE IF NOT EXISTS Users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL, 
+        password TEXT NOT NULL,
         avatar TEXT
       )`,
-      
+
       `CREATE TABLE IF NOT EXISTS Posts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         message TEXT NOT NULL,
@@ -74,23 +74,22 @@ async function initializeAllTables() {
         FOREIGN KEY (user_id) REFERENCES Users(id),
         FOREIGN KEY (channel_id) REFERENCES Channels(id)
       )`,
-      
+
       `CREATE TABLE IF NOT EXISTS Channels (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        Channelname TEXT UNIQUE NOT NULL,
-        Private BOOLEAN DEFAULT 0
+        Channel_name TEXT UNIQUE NOT NULL,
+        private BOOLEAN DEFAULT 0
       )`,
-      
+
       `CREATE TABLE IF NOT EXISTS PublicChannels (
-        user_id INTEGER,
         channel_id INTEGER,
-        PRIMARY KEY (user_id, channel_id),
-        FOREIGN KEY (user_id) REFERENCES Users(id),
+        channel_name TEXT,
         FOREIGN KEY (channel_id) REFERENCES Channels(id)
       )`,
-      
+
       `CREATE TABLE IF NOT EXISTS PrivateChannels (
         channel_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        channel_name TEXT UNIQUE NOT NULL,
         user_id1 INTEGER,
         user_id2 INTEGER,
         FOREIGN KEY (user_id1) REFERENCES Users(id),
@@ -134,70 +133,6 @@ async function savePost(message, user_id, channel_id) {
   });
 }
 
-
-
-
-
-
-async function saveInPublicChannels(user_id, channel_id) {
-  return new Promise((resolve, reject) => {
-    const query = `
-        INSERT INTO PublicChannels (user_id, channel_id)
-        VALUES (?, ?);
-        `;
-    db.run(query, [user_id, channel_id], function (err) {
-      if (err) {
-        console.error(`Error:`, err.message);
-        reject(err);
-      } else {
-        console.log("Successfully saved in public channels");
-        resolve();
-      }
-    }
-    );
-  });
-}
-
-async function saveInPrivateChannels(user_id1, user_id2) {
-  return new Promise((resolve, reject) => {
-    const query = `
-        INSERT INTO PrivateChannels (user_id1, user_id2)
-        VALUES (?, ?);
-        `;
-    db.run(query, [user_id1, user_id2], function (err) {
-      if (err) {
-        console.error(`Error:`, err.message);
-        reject(err);
-      } else {
-        console.log("Successfully saved in private channels");
-        resolve();
-      }
-    }
-    );
-  });
-}
-
-
-async function saveInChannel(channelname, private) {
-  return new Promise((resolve, reject) => {
-    const query = `
-        INSERT INTO Channels (channelname, private)
-        VALUES (?, ?);
-    `;
-    db.run(query, [channelname, private], function (err) {
-      if (err) {
-        console.error(`Error:`, err.message);
-        reject(err);
-      } else {
-        console.log("Successfully saved channel");
-        const channel_id = this.lastID; // Capture the channel_id from the inserted row
-        resolve();
-      }
-    });
-  });
-}
-
-
 async function saveUser(username, password, avatar) {
   return new Promise((resolve) => {
     const query = `
@@ -215,7 +150,6 @@ async function saveUser(username, password, avatar) {
     });
   });
 }
-
 
 async function getUser(username, password) {
   return new Promise((resolve, reject) => {
@@ -240,6 +174,115 @@ async function getUser(username, password) {
   });
 }
 
+async function checkForChannelName(tableName, username) {   
+  return new Promise((resolve, reject) => {
+
+    const one = username + tableName;
+    const two = tableName + username;
+
+    const query = `
+        SELECT * FROM Channels WHERE Channel_name IN (?, ?, ?);
+    `;
+    db.get(query, [tableName, one, two], (err, row) => {
+      if (err) {
+        console.error(`Error:`, err.message);
+        reject(err);
+      } else {
+        if (row) {
+          console.log(`Row with Channel_name "${tableName}" exists`);
+          // Return both the existence status and the 'private' attribute value if it exists
+          resolve({ exists: true, private: row.private });
+        } else {
+          console.log(`Row with Channel_name "${tableName}" does not exist`);
+          resolve({ exists: false });
+        }
+      }
+    });
+  });
+}
+
+
+
+
+
+
+async function isTheRoomAUser(roomName) {
+  return new Promise((resolve, reject) => {
+    const query = `
+        SELECT * FROM Users WHERE username = ?;
+    `;
+    db.get(query, [roomName], (err, row) => {
+      if (err) {
+        console.error(`Error:`, err.message);
+        reject(err);
+      } else {
+        if (row) {
+          console.log(`Row with username "${roomName}" exists`);
+          resolve(true);
+        } else {
+          console.log(`Row with username "${roomName}" does not exist`);
+          resolve(false);
+        }
+      }
+    });
+  });
+
+}
+
+function generateRandomRoomName() {
+  const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < 8; i++) {
+      const randomIndex = Math.floor(Math.random() * characters.length);
+      result += characters[randomIndex];
+  }
+  return result;
+}
+
+
+
+
+
+
+async function savePrivateChannel(channelName, user_id1, user_id2) {
+  return new Promise((resolve, reject) => {
+    const query = `
+        INSERT INTO PrivateChannels (channel_name, user_id1, user_id2)
+        VALUES (?, ?, ?);
+    `;
+    db.run(query, [channelName, user_id1, user_id2], function (err) {
+      if (err) {
+        console.error(`Error:`, err.message);
+        reject(err);
+      } else {
+        console.log("Successfully saved private channel");
+        resolve();
+      }
+    });
+  });
+}
+
+async function saveToChannels(channelName, private) {
+  return new Promise((resolve, reject) => {
+    const query = `
+        INSERT INTO Channels (Channel_name, private)
+        VALUES (?, ?);
+    `;
+    db.run(query, [channelName, private], function (err) {
+      if (err) {
+        console.error(`Error:`, err.message);
+        reject(err);
+      } else {
+        console.log("Successfully saved to channels");
+        resolve();
+      }
+    });
+  });
+
+}
+
+
+
 
 
 
@@ -252,13 +295,16 @@ const io = new Server(3000, {
   }
 });
 
-
+function generateRoomName(user1, user2){
+  return user1 + user2;
+}
 
 io.on('connection', (socket) => {
   console.log(`Client connected with id: ${socket.id}`);
 
-  socket.on('joinRoom', async (roomName) => {
-    console.log(`${socket.id} trying to join room: ${roomName}`);
+  socket.on('joinRoom', async (data) => {
+    const {roomName, username, password} = data;
+    console.log(`${socket.id} trying to join room: ${data.roomName}`);
     try {
         if (socketRooms[socket.id]) {
             const previousRoom = socketRooms[socket.id];
@@ -266,22 +312,64 @@ io.on('connection', (socket) => {
             console.log(`${socket.id} left room: ${previousRoom}`);
         }
 
-        socket.join(roomName);
-        socketRooms[socket.id] = roomName;
-        console.log(`${socket.id} joined room: ${roomName}`);
+        // this will later on be called: socket.join(roomName);
+        // this will later on be called: socketRooms[socket.id] = roomName;
+        
 
-        await checkForTableExist(roomName);
+
+
+
+        const { exists, private: privateValue } = await checkForChannelName(roomName);
+
+        
+        if (exists) {
+            if (privateValue) {
+              console.log("Alright everything went chill you can proceed with public side")
+               socket.join(roomName);  // join user to this room/channel
+                // give him earlier messages
+          
+            }else {
+              socket.join(roomName); // join user to this room/channel
+                // give him earlier messages
+            }
+          }
+        else {
+            // Check if the room is a user
+            const isUser = await isTheRoomAUser(roomName);
+            if (isUser) {
+                const generatedRoomName = generateRoomName(username, roomName);// generate new 8 didgit room/table name
+                savePrivateChannel(generatedRoomName, roomName, username );// create a new channel with this name
+                saveToChannels(generatedRoomName, true);// create a new channel with this name
+                socket.join(roomName);// join user to this room/channel
+            } else {
+                // generate new channel dirrectly with this roomName
+                // join user to this room/channel
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+        /*
         const messages = await getData(roomName);
 
         if (messages && messages.length > 0) {
-            messages.forEach((message) => {
-                socket.emit('message', [message.avatar, message.name, message.post]);
-            });
-            console.log(`${socket.id} has received previous messages for room "${roomName}"`);
+          messages.forEach((message) => {
+            socket.emit('message', [message.avatar, message.name, message.post]);
+          });
+          console.log(`${socket.id} has received previous messages for room "${roomName}"`);
         } else {
-            console.log(`No messages found in room "${roomName}".`);
-            socket.emit('message', ["Resources/admin.webp", "System", "No messages yet in this room."]);
+          console.log(`No messages found in room "${roomName}".`);
+          socket.emit('message', ["Resources/admin.webp", "System", "No messages yet in this room."]);
         }
+        */
     } catch (err) {
         console.error(`Error in 'joinRoom' for room "${roomName}":`, err.message);
     }
@@ -295,8 +383,8 @@ io.on('connection', (socket) => {
         }
 
         const [messageText, username, avatar] = message;  // Ensure correct destructuring
-        await checkForTableExist(roomName);  // Ensure the table exists for the room
-        await insertData(roomName, { avatar, name: username, post: messageText });  // Insert message into DB
+        await checkForChannelName(roomName);  // Ensure the table exists for the room
+        //await insertData(roomName, { avatar, name: username, post: messageText });  
 
         // Emit the message to all clients in the room, including the sender
         socket.to(roomName).emit('message', [avatar, username, messageText]);  // Correct order: [avatar, name, post]
@@ -361,5 +449,5 @@ io.on('connection', (socket) => {
 
 
 
-//initializeAllTables();
+initializeAllTables();
 

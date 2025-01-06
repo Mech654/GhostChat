@@ -31,7 +31,8 @@ function updateFriendList() {
 function joinRoom(roomName) {
     if (roomName && roomName !== currentRoom) {
         currentRoom = roomName;
-        socket.emit('joinRoom', roomName); // No callback
+        data = {roomName: roomName, username: localStorage.getItem('username'), password: localStorage.getItem('password')};
+        socket.emit('joinRoom', data); // No callback
         document.getElementById('chatWindow').innerHTML = '';
         document.getElementById('currentRoom').textContent = `Current Room: ${roomName}`;
     }

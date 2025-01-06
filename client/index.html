@@ -270,18 +270,24 @@
     }
 
     async function login() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+
       const socket = io('http://localhost:3000');
-      socket.emit('login', {
-        username: document.getElementById('username').value.trim(),
-        password: document.getElementById('password').value.trim(),
-      }, (response) => {
+      socket.emit('login', { username, password }, (response) => {
         if (response.success) {
+          // Only set username and password in localStorage if login is successful
+          localStorage.setItem('username', username);
+          localStorage.setItem('password', password);
+
+          console.log('Redirecting to chat...');
           window.location.href = 'chat.html';
         } else {
           alert('Login failed: ' + response.message);
         }
       });
     }
+
 
     async function register() {
       const socket = io('http://localhost:3000');
