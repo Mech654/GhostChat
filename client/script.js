@@ -31,12 +31,35 @@ function updateFriendList() {
 function joinRoom(roomName) {
     if (roomName && roomName !== currentRoom) {
         currentRoom = roomName;
-        data = {roomName: roomName, username: localStorage.getItem('username'), password: localStorage.getItem('password')};
-        socket.emit('joinRoom', data); // No callback
-        document.getElementById('chatWindow').innerHTML = '';
-        document.getElementById('currentRoom').textContent = `Current Room: ${roomName}`;
+        const data = { roomName: roomName, username: localStorage.getItem('username'), password: localStorage.getItem('password') };
+        
+        socket.emit('joinRoom', data, (response) => {
+            if (response.success) {
+                // Update currentRoom with the roomname returned by the server
+                currentRoom = response.roomname;
+
+                // Update the UI after joining the room
+                document.getElementById('chatWindow').innerHTML = '';
+                document.getElementById('currentRoom').textContent = `Current Room: ${currentRoom}`;
+            } else {
+                console.error('Failed to join room:', response);
+            }
+        });
     }
 }
+
+
+function leaveRoom(roomName) {
+    if (roomName && roomName === currentRoom) {
+        socket.emit('leaveRoom', { roomName: roomName, username: localStorage.getItem('username') });
+        currentRoom = null;
+        document.getElementById('chatWindow').innerHTML = '';
+        document.getElementById('currentRoom').textContent = 'Not in any room';
+    }
+}
+
+
+
 const username = localStorage.getItem('username');
 function displayMessage(message) {
     const chatWindow = document.getElementById('chatWindow');
