@@ -26,6 +26,7 @@ function encrypt(text) {
 
 // Function to decrypt data
 function decrypt(text) {
+  console.log("text is: " + text);
   const parts = text.split(':');
   const iv = Buffer.from(parts.shift(), 'hex');
   const encryptedText = parts.join(':');
@@ -70,7 +71,7 @@ async function initializeAllTables() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         message TEXT NOT NULL,
         user_id INTEGER,
-        channel_id INTEGER,
+        channel_id TEXT,
         FOREIGN KEY (user_id) REFERENCES Users(id),
         FOREIGN KEY (channel_id) REFERENCES Channels(id)
       )`,
@@ -120,8 +121,8 @@ async function savePost(message, user_id, channel_id) {
         INSERT INTO Posts (message, user_id, channel_id)
         VALUES (?, ?, ?);
         `;
-
-    db.run(query, [message, user_id, channel_id], function (err) {
+    const encryptedMessage = encrypt(message);
+    db.run(query, [encryptedMessage, user_id, channel_id], function (err) {
       if (err) {
         console.error(`Error:`, err.message);
         reject(err);
@@ -339,7 +340,101 @@ async function getUserAvatar(username) {
   });
 }
 
+async function getUserAvatarById(user_id) {
+  return new Promise((resolve, reject) => {
+    const query = `
+        SELECT avatar FROM Users WHERE id = ?;
+    `;
+    db.get(query, [user_id], (err, row) => {
+      if (err) {
+        console.error(`Error:`, err.message);
+        reject(err);
+      } else {
+        if (row) {
+          console.log(`Avatar for user with id "${user_id}" found`);
+          resolve(row.avatar);
+        } else {
+          console.log(`Avatar for user with id "${user_id}" not found`);
+          resolve(null);
+        }
+      }
+    });
+  });
+}
 
+
+async function getUsernameById(user_id) {
+  return new Promise((resolve, reject) => {
+    const query = `
+
+        SELECT username FROM Users WHERE id = ?;
+    `;
+    db.get(query, [user_id], (err, row) => {
+      if (err) {
+        console.error(`Error:`, err.message);
+        reject(err);
+      } else {
+        if (row) {
+          console.log(`Username for user with id "${user_id}" found`);
+          resolve(row.username);
+        } else {
+          console.log(`Username for user with id "${user_id}" not found`);
+          resolve(null);
+        }
+      }
+    });
+  });
+}
+
+async function getUserId(username) {
+  return new Promise((resolve, reject) => {
+    const query = `
+        SELECT id FROM Users WHERE username = ?;
+    `;
+    db.get(query, [username], (err, row) => {
+      if (err) {
+        console.error(`Error:`, err.message);
+        reject(err);
+      } else {
+        if (row) {
+          console.log(`User ID for user "${username}" found`);
+          resolve(row.id);
+        } else {
+          console.log(`User ID for user "${username}" not found`);
+          resolve(null);
+        }
+      }
+    });
+  });
+}
+
+
+
+
+
+
+
+async function getEarlierMessages(channelName) {
+  return new Promise((resolve, reject) => {
+    const query = `
+        SELECT * FROM Posts WHERE channel_id = ?;
+    `;
+    db.all(query, [channelName], (err, rows) => {
+      if (err) {
+        console.error(`Error:`, err.message);
+        reject(err);
+      } else {
+        if (rows) {
+          console.log(`Earlier messages for channel "${channelName}" found`);
+          resolve(rows);
+        } else {
+          console.log(`Earlier messages for channel "${channelName}" not found`);
+          resolve([]);
+        }
+      }
+    });
+  });
+}
 
 
 
@@ -383,7 +478,6 @@ io.on('connection', (socket) => {
                 socket.join(channel_name);  // Join user to this room/channel
                 callback({ success: true, roomname: channel_name });
 
-                // Optionally, send earlier messages here
             } else {
                 socket.join(roomName);  // Join user to this room/channel
                 callback({ success: true, roomname: roomName });
@@ -408,6 +502,28 @@ io.on('connection', (socket) => {
         // Save the room for the user to keep track of where they are
         socketRooms[socket.id] = roomName;
 
+        
+
+        //send earlier messages
+        const earlierMessages = await getEarlierMessages(privateValue == 1 ? channel_name : roomName);
+
+        if (earlierMessages.length > 0) {
+          for (const message of earlierMessages) {
+              console.log(message);
+              const decryptedMessage = decrypt(message.message);
+
+              const avatar = await getUserAvatarById(message.user_id);
+              const othersUsername = await getUsernameById(message.user_id);
+      
+              // Print everything at once to ensure correctness
+              console.log("room: "+ roomName + " avatar is: " + avatar + " username is: " + othersUsername + " decrypted message is: " + decryptedMessage);
+      
+              socket.emit('message', [avatar, othersUsername, decryptedMessage]);
+          }
+       } 
+      
+
+
     } catch (err) {
         // Handle error
         console.error('Error during room join:', err);
@@ -423,9 +539,10 @@ io.on('connection', (socket) => {
           }
 
           const [messageText, username, avatar] = message;  // Ensure correct destructuring
+          const userId = await getUserId(username);
 
           // Save the message to the database
-          await savePost(messageText, username, roomName);
+          await savePost(messageText, userId, roomName);
           console.log(`Message from ${socket.id} successfully saved in room "${roomName}"`);
 
           const userAvatar = await getUserAvatar(username);
@@ -489,12 +606,4 @@ io.on('connection', (socket) => {
 
 
 //Only run once for table generation
-initializeAllTables();
-
-
-
-
-
-
-
-// 500 reached!!!
+initializeAllTables();   

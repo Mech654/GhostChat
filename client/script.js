@@ -8,11 +8,13 @@ function updateRoomList() {
     roomList.innerHTML = '';
 
     joinedRooms.forEach(room => {
-        const roomItem = document.createElement('div');
-        roomItem.classList.add('room-item');
-        roomItem.textContent = room;
-        roomItem.addEventListener('click', () => joinRoom(room));
-        roomList.appendChild(roomItem);
+        if (!room.includes('***')) { // Only display public rooms here
+            const roomItem = document.createElement('div');
+            roomItem.classList.add('room-item');
+            roomItem.textContent = room;
+            roomItem.addEventListener('click', () => joinRoom(room));
+            roomList.appendChild(roomItem);
+        }
     });
 }
 
@@ -30,13 +32,24 @@ function updateFriendList() {
 
 function joinRoom(roomName) {
     if (roomName && roomName !== currentRoom) {
-        currentRoom = roomName;
         const data = { roomName: roomName, username: localStorage.getItem('username'), password: localStorage.getItem('password') };
-        
         socket.emit('joinRoom', data, (response) => {
             if (response.success) {
-                // Update currentRoom with the roomname returned by the server
-                currentRoom = response.roomname;
+                currentRoom = response.roomname; // Update currentRoom with the server-defined name
+
+                if (currentRoom.includes('***')) {
+                    // Handle private chat
+                    if (!personalChats[currentRoom]) {
+                        personalChats[currentRoom] = [];
+                        updateFriendList();
+                    }
+                } else {
+                    // Handle public room
+                    if (!joinedRooms.includes(currentRoom)) {
+                        joinedRooms.push(currentRoom);
+                        updateRoomList();
+                    }
+                }
 
                 // Update the UI after joining the room
                 document.getElementById('chatWindow').innerHTML = '';
@@ -48,7 +61,6 @@ function joinRoom(roomName) {
     }
 }
 
-
 function leaveRoom(roomName) {
     if (roomName && roomName === currentRoom) {
         socket.emit('leaveRoom', { roomName: roomName, username: localStorage.getItem('username') });
@@ -58,35 +70,11 @@ function leaveRoom(roomName) {
     }
 }
 
-
-
-const username = localStorage.getItem('username');
 function displayMessage(message) {
     const chatWindow = document.getElementById('chatWindow');
     const div = document.createElement('div');
     const sender = message[1];
-    console.log(message);
-    
-    // innerHTML er en dårlig måde at indsætte HTML på, da det kan være usikkert.
-    // og kan føre til XSS
-    // det kan løses ved lave nye elementer og indsætte dem i stedet
-    // og bruge textContent i stedet for innerHTML hvor der skal indsættes tekst
-/*  
-    const sender = message[1]; // Username is the second element
-    const avatar = message[0]; // Avatar is the third element
-    const postContent = message[2]; // Post content is the first element
 
-    div.innerHTML = ` 
-    <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
-        <img src="${avatar}" alt="Avatar" style="width: 60px; height: 60px; border-radius: 50%; margin-right: 10px;">
-        <div style="background-color: #333; padding: 12px; border-radius: 8px; max-width: 90%; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;">
-            <div style="font-weight: bold; color: #7289da;">${sender}</div>
-            <div style="color: #dcddde;">${postContent}</div>
-        </div>
-    </div>
-    `; */
-    
-    // et Exempel på en måde at løse XSS på
     const container = document.createElement('div');
     container.style = "display: flex; align-items: flex-start; margin-bottom: 10px;";
 
@@ -105,57 +93,54 @@ function displayMessage(message) {
     const messageDiv = document.createElement('div');
     messageDiv.style = "color: #dcddde;";
     messageDiv.textContent = message[2];
-    
+
     messageContainer.appendChild(senderDiv);
     messageContainer.appendChild(messageDiv);
 
     container.appendChild(img);
     container.appendChild(messageContainer);
-    
+
     div.appendChild(container);
 
-    chatWindow.append(div);
-    chatWindow.scrollTop = chatWindow.scrollHeight;
-
-    if (sender !== username && sender !== "System" && !personalChats[sender]) {
-        personalChats[sender] = [];
+    // Only display the message if it belongs to the current room
+    if ((currentRoom.includes('***') && sender !== "System") || !currentRoom.includes('***')) {
+        chatWindow.append(div);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    if(sender !== "System" && username !== sender) {
-        personalChats[sender].push(message);
-        updateFriendList();
+    // Add messages to the appropriate storage
+    if (currentRoom.includes('***') && sender !== "System") {
+        if (!personalChats[currentRoom]) {
+            personalChats[currentRoom] = [];
+        }
+        personalChats[currentRoom].push(message);
     }
 }
 
 socket.on('message', (message) => {
+    console.log('New message:', message);
     displayMessage(message);
 });
 
 document.getElementById('joinRoomBtn').addEventListener('click', () => {
     const roomName = prompt("Enter room name:");
     if (roomName) {
-        if (!joinedRooms.includes(roomName)) {
-            joinedRooms.push(roomName);
-            updateRoomList();
-        }
         joinRoom(roomName);
     }
 });
 
-document.addEventListener('keydown', function(event) {  // Send message on Enter key press                                                          
+document.addEventListener('keydown', function(event) {
     if (event.key === 'Enter') {
         const input = document.getElementById('chatInput');
-        const message = [input.value, localStorage.getItem('username'), localStorage.getItem('avatar')];                                                  
+        const message = [input.value, localStorage.getItem('username'), localStorage.getItem('avatar')];
         if (message && currentRoom) {
-            socket.emit('sendMessage', currentRoom, message); // No callback
+            socket.emit('sendMessage', currentRoom, message);
         } else if (!currentRoom) {
             alert("Please join a room first!");
         }
         input.value = '';
     }
 });
-
-
 
 if (!localStorage.getItem('username') && !localStorage.getItem('password')) {
     window.location.href = 'index.html';
