@@ -8,12 +8,10 @@ const { Server } = require('socket.io');
 const ALGORITHM = 'aes-256-cbc';
 const IV_LENGTH = 16;
 const key = process.env.KEY;
-console.log('KEY:', key);
 
 const ENCRYPTION_KEY = crypto.createHash('sha256')
   .update(key)
   .digest('base64').substr(0, 32); // Hash the key to ensure it's 32 bytes long
-
 
 // Function to encrypt data
 function encrypt(text) {
@@ -192,7 +190,8 @@ async function checkForChannelName(tableName, username) {
         if (row) {
           console.log(`Row with Channel_name "${tableName}" exists`);
           // Return both the existence status and the 'private' attribute value if it exists
-          resolve({ exists: true, private: row.private, channel_name: row.Channel_name });
+          console.log("row name: " + row.Channel_name);
+          resolve({ exists: true, private: row.private, channel_name: row.Channel_name, table: row.Channel_name });
         } else {
           console.log(`Row with Channel_name "${tableName}" does not exist`);
           resolve({ exists: false });
@@ -293,7 +292,6 @@ async function saveToChannels(channelName, private) {
         console.error(`Error:`, err.message);
         reject(err);
       } else {
-        console.log("Successfully saved to channels");
         resolve();
       }
     });
@@ -311,7 +309,6 @@ async function saveInPosts(message, user_id, channel_id) {
         console.error(`Error:`, err.message);
         reject(err);
       } else {
-        console.log("Successfully saved in posts");
         resolve();
       }
     });
@@ -329,10 +326,8 @@ async function getUserAvatar(username) {
         reject(err);
       } else {
         if (row) {
-          console.log(`Avatar for user "${username}" found`);
           resolve(row.avatar);
         } else {
-          console.log(`Avatar for user "${username}" not found`);
           resolve(null);
         }
       }
@@ -351,10 +346,8 @@ async function getUserAvatarById(user_id) {
         reject(err);
       } else {
         if (row) {
-          console.log(`Avatar for user with id "${user_id}" found`);
           resolve(row.avatar);
         } else {
-          console.log(`Avatar for user with id "${user_id}" not found`);
           resolve(null);
         }
       }
@@ -375,10 +368,8 @@ async function getUsernameById(user_id) {
         reject(err);
       } else {
         if (row) {
-          console.log(`Username for user with id "${user_id}" found`);
           resolve(row.username);
         } else {
-          console.log(`Username for user with id "${user_id}" not found`);
           resolve(null);
         }
       }
@@ -397,10 +388,8 @@ async function getUserId(username) {
         reject(err);
       } else {
         if (row) {
-          console.log(`User ID for user "${username}" found`);
           resolve(row.id);
         } else {
-          console.log(`User ID for user "${username}" not found`);
           resolve(null);
         }
       }
@@ -425,10 +414,8 @@ async function getEarlierMessages(channelName) {
         reject(err);
       } else {
         if (rows) {
-          console.log(`Earlier messages for channel "${channelName}" found`);
           resolve(rows);
         } else {
-          console.log(`Earlier messages for channel "${channelName}" not found`);
           resolve([]);
         }
       }
@@ -453,31 +440,38 @@ function generateRoomName(user1, user2){
 }
 
 io.on('connection', (socket) => {
-  console.log(`Client connected with id: ${socket.id}`);
 
   // Object to track rooms the user is in
   const socketRooms = {};
 
   socket.on('joinRoom', async (data, callback) => {  // Notice the `callback` here
     const { roomName, username, password } = data;
-    console.log(`${socket.id} trying to join room: ${data.roomName}`);
     try {
         // If the user is already in a room, leave the previous room
         if (socketRooms[socket.id]) {
             const previousRoom = socketRooms[socket.id];
             socket.leave(previousRoom);
-            console.log(`${socket.id} left room: ${previousRoom}`);
         }
 
         // Check if the room exists and proceed with joining or creating a new room
-        const { exists, private: privateValue, channel_name } = await checkForChannelName(roomName, username);
+        const { exists, private: privateValue, channel_name, table} = await checkForChannelName(roomName, username);
         console.log("the value is of private is: " + privateValue);
         if (exists) {
             if (privateValue == 1) {
-                console.log(channel_name);
-                socket.join(channel_name);  // Join user to this room/channel
-                callback({ success: true, roomname: channel_name });
-
+                if (table != roomName) {
+                    console.log("roomName: " + roomName + " table: " + table);
+                    //Make sure that the user is THE user
+                    const realUser = await getUser(username, password);
+                    if (!realUser) {
+                        throw new Error('Invalid user');
+                    }
+                    socket.join(channel_name);  // Join user to this room/channel
+                    callback({ success: true, roomname: channel_name });
+                }
+                else {
+                  callback({ success: false, roomname: roomName });
+                  console.log("Unauthorized access");
+                }
             } else {
                 socket.join(roomName);  // Join user to this room/channel
                 callback({ success: true, roomname: roomName });
@@ -485,10 +479,15 @@ io.on('connection', (socket) => {
         } else {
             // Check if the room is a user
             const isUser = await isTheRoomAUser(roomName);
-            if (isUser) {
+            if (isUser && table != roomName) {
+              console.log("roomName: " + roomName + " table: " + table);
+                const realUser = await getUser(username, password);
+                if (!realUser) {
+                    throw new Error('Invalid user');
+                }
                 const generatedRoomName = generateRoomName(username, roomName); // Generate new room name
-                savePrivateChannel(generatedRoomName, roomName, username); // Create a new channel with this name
-                saveToChannels(generatedRoomName, true); // Create a new private channel
+                savePrivateChannel(generatedRoomName, roomName, username);// Create a new private channel
+                saveToChannels(generatedRoomName, true); 
                 socket.join(generatedRoomName);  // Join user to the generated private room
                 callback({ success: true, roomname: generatedRoomName });
             } else {
@@ -509,15 +508,11 @@ io.on('connection', (socket) => {
 
         if (earlierMessages.length > 0) {
           for (const message of earlierMessages) {
-              console.log(message);
               const decryptedMessage = decrypt(message.message);
 
               const avatar = await getUserAvatarById(message.user_id);
               const othersUsername = await getUsernameById(message.user_id);
-      
-              // Print everything at once to ensure correctness
-              console.log("room: "+ roomName + " avatar is: " + avatar + " username is: " + othersUsername + " decrypted message is: " + decryptedMessage);
-      
+    
               socket.emit('message', [avatar, othersUsername, decryptedMessage]);
           }
        } 
@@ -532,7 +527,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('sendMessage', async (roomName, message) => {
-      console.log(`Received message in room "${roomName}" from client ${socket.id}:`, message);
       try {
           if (!roomName || !message || message.length < 3) {
               throw new Error('Invalid message format or missing room');
@@ -543,14 +537,11 @@ io.on('connection', (socket) => {
 
           // Save the message to the database
           await savePost(messageText, userId, roomName);
-          console.log(`Message from ${socket.id} successfully saved in room "${roomName}"`);
 
           const userAvatar = await getUserAvatar(username);
           // Emit the message to all clients in the room, including the sender
           socket.to(roomName).emit('message', [userAvatar, username, messageText]);  // Correct order: [avatar, name, post]
           socket.emit('message', [userAvatar, username, messageText]);  // Send the message back to the sender in the correct order
-
-          console.log(`Message from ${socket.id} successfully sent in room "${roomName}"`);
       } catch (err) {
           console.error(`Error in 'sendMessage' for room "${roomName}":`, err.message);
       }
@@ -558,7 +549,6 @@ io.on('connection', (socket) => {
 
   socket.on('register', async (data, callback) => {
       const { username, password, profileImage } = data;
-      console.log(`Received registration request for user: ${username}`);
 
       try {
           const user = await saveUser(username, password, profileImage);
@@ -574,7 +564,7 @@ io.on('connection', (socket) => {
           callback({ success: false, message: err.message });
       }
   });
-
+  
   socket.on('login', async (data, callback) => {
       const { username, password } = data;
       console.log(`Received login request for user: ${username}`);
@@ -585,7 +575,7 @@ io.on('connection', (socket) => {
               callback({ success: true, user });
               console.log(`User ${username} successfully logged in`);
           } else {
-              callback({ success: false, message: 'Login failed' });
+              callback({ success: false, message: 'Username or password was incorrect.' });
               console.log(`User ${username} login failed`);
           }
       } catch (err) {
@@ -606,4 +596,4 @@ io.on('connection', (socket) => {
 
 
 //Only run once for table generation
-initializeAllTables();   
+//initializeAllTables();   

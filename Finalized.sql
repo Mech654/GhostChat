@@ -11,7 +11,7 @@ CREATE TABLE Posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     message TEXT NOT NULL,
     user_id INTEGER,  -- Foreign key reference to Users (INTEGER for user IDs)
-    channel_id INTEGER,  -- Foreign key reference to Channels (TEXT for channel IDs)
+    channel_id TEXT,  -- Foreign key reference to Channels (TEXT for channel IDs)
     FOREIGN KEY (user_id) REFERENCES Users(id),
     FOREIGN KEY (channel_id) REFERENCES Channels(id)
 );

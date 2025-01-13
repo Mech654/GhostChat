@@ -31,8 +31,18 @@ function updateFriendList() {
 }
 
 function joinRoom(roomName) {
+    const username = localStorage.getItem('username');
+    const password = localStorage.getItem('password');
+
+    if (!username || !password) {
+        alert('Please provide both username and password.');
+        return;
+    }
+
     if (roomName && roomName !== currentRoom) {
-        const data = { roomName: roomName, username: localStorage.getItem('username'), password: localStorage.getItem('password') };
+        const data = { roomName: roomName, username: username, password: password };
+
+        // Disable join button or show loading indicator until response
         socket.emit('joinRoom', data, (response) => {
             if (response.success) {
                 currentRoom = response.roomname; // Update currentRoom with the server-defined name
@@ -55,11 +65,16 @@ function joinRoom(roomName) {
                 document.getElementById('chatWindow').innerHTML = '';
                 document.getElementById('currentRoom').textContent = `Current Room: ${currentRoom}`;
             } else {
+                // Display error message on UI instead of just logging it
+                alert(`Failed to join room: ${response.message}`);
                 console.error('Failed to join room:', response);
             }
+
+            // Re-enable button or hide loading indicator after response
         });
     }
 }
+
 
 function leaveRoom(roomName) {
     if (roomName && roomName === currentRoom) {
