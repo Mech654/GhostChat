@@ -1,217 +1,219 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat Webapp</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #181818;
-            color: #ddd;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            height: 100vh;
-            padding: 20px;
-            margin: 0;
-        }
-        .sidebar {
-            width: 300px;
-            height: 100%;
-            background-color: #222;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            overflow-y: auto;
-            border-radius: 8px;
-        }
+      body {
+        font-family: 'Arial', sans-serif;
+        background-color: #181818;
+        color: #ddd;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        height: 100vh;
+        padding: 20px;
+        margin: 0;
+      }
+      .sidebar {
+        width: 300px;
+        height: 100%;
+        background-color: #222;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow-y: auto;
+        border-radius: 8px;
+      }
 
-        .sidebar h2 {
-            font-size: 2rem;
-            color: #00bfff;
-        }
+      .sidebar h2 {
+        font-size: 2rem;
+        color: #00bfff;
+      }
 
-        .room-item {
-            padding: 10px;
-            background-color: #333;
-            border-radius: 8px;
-            cursor: pointer;
-            color: #fff;
-            text-align: center;
-        }
+      .room-item {
+        padding: 10px;
+        background-color: #333;
+        border-radius: 8px;
+        cursor: pointer;
+        color: #fff;
+        text-align: center;
+      }
 
-        .room-item:hover {
-            background-color: #009ac1;
-        }
+      .room-item:hover {
+        background-color: #009ac1;
+      }
 
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            max-width: 900px;
-            height: 80vh;
-            justify-content: space-between;
-            background-color: #222;
-            padding: 20px;
-            border-radius: 8px;
-            flex-grow: 1;
-        }
+      .chat-container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-width: 900px;
+        height: 80vh;
+        justify-content: space-between;
+        background-color: #222;
+        padding: 20px;
+        border-radius: 8px;
+        flex-grow: 1;
+      }
 
-        .chat-header {
-            color: #00bfff;
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-            text-align: center;
-        }
+      .chat-header {
+        color: #00bfff;
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+        text-align: center;
+      }
 
-        .chat-container p {
-            font-size: 1.1rem;
-            margin-bottom: 20px;
-            color: #bbb;
-        }
+      .chat-container p {
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+        color: #bbb;
+      }
 
-        .input-area {
-            display: flex;
-            width: 100%;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 20px;
-        }
+      .input-area {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+      }
 
-        #chatInput {
-            width: 80%;
-            padding: 12px 15px;
-            font-size: 1.2rem;
-            background-color: #333;
-            border: 1px solid #444;
-            color: #f0f0f0;
-            border-radius: 8px;
-            outline: none;
-        }
+      #chatInput {
+        width: 80%;
+        padding: 12px 15px;
+        font-size: 1.2rem;
+        background-color: #333;
+        border: 1px solid #444;
+        color: #f0f0f0;
+        border-radius: 8px;
+        outline: none;
+      }
 
-        #chatInput:focus {
-            border-color: #00bfff;
-        }
+      #chatInput:focus {
+        border-color: #00bfff;
+      }
 
-        #joinRoomBtn {
-            padding: 12px 20px;
-            background-color: #00bfff;
-            color: white;
-            font-size: 1.1rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
+      #joinRoomBtn {
+        padding: 12px 20px;
+        background-color: #00bfff;
+        color: white;
+        font-size: 1.1rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
 
-        #joinRoomBtn:hover {
-            background-color: #009ac1;
-        }
+      #joinRoomBtn:hover {
+        background-color: #009ac1;
+      }
 
-        /* Chat messages */
-        .messages {
-            width: 100%;
-            flex-grow: 1;
-            background-color: #222;
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
+      /* Chat messages */
+      .messages {
+        width: 100%;
+        flex-grow: 1;
+        background-color: #222;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
 
-        .message {
-            background-color: #333;
-            padding: 12px;
-            border-radius: 8px;
-            max-width: 90%;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            white-space: normal;
-        }
+      .message {
+        background-color: #333;
+        padding: 12px;
+        border-radius: 8px;
+        max-width: 90%;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+      }
 
-        /* Layout for two side-by-side panels */
-        .main-container {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-        }
+      /* Layout for two side-by-side panels */
+      .main-container {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+      }
 
-        /* Right Sidebar for personal chats */
-        .right-sidebar {
-            width: 300px;
-            height: 100%;
-            background-color: #222;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            overflow-y: auto;
-            border-radius: 8px;
-        }
+      /* Right Sidebar for personal chats */
+      .right-sidebar {
+        width: 300px;
+        height: 100%;
+        background-color: #222;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow-y: auto;
+        border-radius: 8px;
+      }
 
-        .right-sidebar h2 {
-            font-size: 2rem;
-            color: #00bfff;
-        }
+      .right-sidebar h2 {
+        font-size: 2rem;
+        color: #00bfff;
+      }
 
-        .friend-item {
-            padding: 10px;
-            background-color: #333;
-            border-radius: 8px;
-            cursor: pointer;
-            color: #fff;
-            text-align: center;
-        }
+      .friend-item {
+        padding: 10px;
+        background-color: #333;
+        border-radius: 8px;
+        cursor: pointer;
+        color: #fff;
+        text-align: center;
+      }
 
-        .friend-item:hover {
-            background-color: #009ac1;
-        }
-
+      .friend-item:hover {
+        background-color: #009ac1;
+      }
     </style>
-</head>
-<body>
-
+  </head>
+  <body>
     <div class="main-container">
-        <!-- Sidebar for rooms -->
-        <div class="sidebar">
-            <h2>Joined Rooms</h2>
-            <div id="roomList"></div>
+      <!-- Sidebar for rooms -->
+      <div class="sidebar">
+        <h2>Joined Rooms</h2>
+        <div id="roomList"></div>
+      </div>
+
+      <!-- Chat Container -->
+      <div class="chat-container">
+        <div class="chat-header" id="currentRoom">No room selected</div>
+        <p>Start a conversation by typing a message below.</p>
+
+        <!-- Messages will appear here -->
+        <div class="messages" id="chatWindow"></div>
+
+        <!-- Chat Input and Button -->
+        <div class="input-area">
+          <input
+            type="text"
+            id="chatInput"
+            placeholder="Type your message here..."
+          />
+          <button id="joinRoomBtn">Join Room</button>
         </div>
+      </div>
 
-        <!-- Chat Container -->
-        <div class="chat-container">
-            <div class="chat-header" id="currentRoom">No room selected</div>
-            <p>Start a conversation by typing a message below.</p>
-
-            <!-- Messages will appear here -->
-            <div class="messages" id="chatWindow"></div>
-
-            <!-- Chat Input and Button -->
-            <div class="input-area">
-                <input type="text" id="chatInput" placeholder="Type your message here..." />
-                <button id="joinRoomBtn">Join Room</button>
-            </div>
-        </div>
-
-        <!-- Right Sidebar for personal chats -->
-        <div class="right-sidebar">
-            <h2>Personal Chats</h2>
-            <div id="friendList"></div>
-        </div>
+      <!-- Right Sidebar for personal chats -->
+      <div class="right-sidebar">
+        <h2>Personal Chats</h2>
+        <div id="friendList"></div>
+      </div>
     </div>
 
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
     <script src="script.js"></script>
-</body>
+  </body>
 </html>

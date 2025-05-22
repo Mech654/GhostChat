@@ -1,308 +1,338 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dark Themed Login & Signup</title>
-  <style>
-    /* Global Styles */
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Arial', sans-serif;
-      background-color: #121212;
-      color: #ffffff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    /* Login Container */
-    .login-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100%;
-      width: 100%;
-    }
-
-    /* Login/Signup Box */
-    .auth-box {
-      background: #1e1e1e;
-      padding: 30px 40px;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-      max-width: 400px;
-      width: 100%;
-    }
-
-    .auth-box h1 {
-      margin-bottom: 20px;
-      font-size: 24px;
-      text-align: center;
-      color: #e0e0e0;
-    }
-
-    /* Input Group */
-    .input-group {
-      margin-bottom: 20px;
-    }
-
-    .input-group label {
-      display: block;
-      font-size: 14px;
-      margin-bottom: 5px;
-      color: #bdbdbd;
-    }
-
-    .input-group input {
-      width: 100%;
-      padding: 10px;
-      font-size: 14px;
-      border: none;
-      border-radius: 5px;
-      background: #2c2c2c;
-      color: #ffffff;
-      outline: none;
-    }
-
-    .input-group input::placeholder {
-      color: #757575;
-    }
-
-    /* Button */
-    .btn {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      font-weight: bold;
-      color: #ffffff;
-      background: #6200ea;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-
-    .btn:hover {
-      background: #3700b3;
-    }
-
-    /* Switch Link */
-    .switch-link {
-      text-align: center;
-      margin-top: 10px;
-      font-size: 14px;
-      color: #bdbdbd;
-    }
-
-    .switch-link a {
-      color: #6200ea;
-      text-decoration: none;
-    }
-
-    .switch-link a:hover {
-      text-decoration: underline;
-    }
-
-    /* Image Selection Overlay */
-    .overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      visibility: hidden;
-      opacity: 0;
-      transition: opacity 0.3s ease, visibility 0.3s ease;
-    }
-
-    .overlay.active {
-      visibility: visible;
-      opacity: 1;
-    }
-
-    .image-options {
-      display: flex;
-      gap: 15px;
-    }
-
-    .image-options img {
-      width: 100px;
-      height: 100px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: transform 0.3s ease;
-    }
-
-    .image-options img:hover {
-      transform: scale(1.1);
-    }
-  </style>
-</head>
-<body>
-  <div class="login-container">
-    <div class="auth-box" id="authBox">
-      <h1 id="formTitle">Login</h1>
-      <form id="authForm">
-        <div class="input-group">
-          <label for="username">Username</label>
-          <input type="text" id="username" name="username" placeholder="Enter your username" required>
-        </div>
-        <div class="input-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" name="password" placeholder="Enter your password" required>
-        </div>
-        <div class="input-group" id="confirmPasswordGroup" style="display: none;">
-          <label for="confirmPassword">Confirm Password</label>
-          <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password">
-        </div>
-        <button type="submit" class="btn" id="submitButton">Login</button>
-        <p class="switch-link">
-          Don't have an account? <a href="#" id="switchLink">Sign up</a>
-        </p>
-      </form>
-    </div>
-  </div>
-
-  <div class="overlay" id="imageOverlay">
-    <div class="image-options" id="imageOptions">
-      <!-- Images will be dynamically loaded here -->
-    </div>
-  </div>
-
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-  <script>
-    // Element references
-    const formTitle = document.getElementById('formTitle');
-    const authForm = document.getElementById('authForm');
-    const confirmPasswordGroup = document.getElementById('confirmPasswordGroup');
-    const submitButton = document.getElementById('submitButton');
-    const switchLink = document.getElementById('switchLink');
-    const imageOverlay = document.getElementById('imageOverlay');
-    const imageOptions = document.getElementById('imageOptions');
-
-    let isLoginMode = true;
-
-    // Placeholder image sources
-    const imageSources = [
-      'Resources/Uden titel.png',
-      'Resources/Uden titel2.png',
-      'Resources/Uden titel3.png',
-      'Resources/Uden titel4.png',
-    ];
-
-    // Switch between login and signup modes
-    switchLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      isLoginMode = !isLoginMode;
-
-      if (isLoginMode) {
-        formTitle.textContent = 'Login';
-        confirmPasswordGroup.style.display = 'none';
-        submitButton.textContent = 'Login';
-        switchLink.textContent = "Don't have an account? Sign up";
-      } else {
-        formTitle.textContent = 'Sign Up';
-        confirmPasswordGroup.style.display = 'block';
-        submitButton.textContent = 'Sign Up';
-        switchLink.textContent = 'Already have an account? Login';
-      }
-    });
-
-    // Form submission logic
-    authForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value.trim();
-      const confirmPassword = document.getElementById('confirmPassword')?.value.trim();
-
-      if (!username || !password) {
-        alert('Please fill in all required fields.');
-        return;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dark Themed Login & Signup</title>
+    <style>
+      /* Global Styles */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Arial', sans-serif;
+        background-color: #121212;
+        color: #ffffff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
       }
 
-      if (!isLoginMode) {
-        // Sign up logic
-        if (password !== confirmPassword) {
-          alert('Passwords do not match.');
+      /* Login Container */
+      .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        width: 100%;
+      }
+
+      /* Login/Signup Box */
+      .auth-box {
+        background: #1e1e1e;
+        padding: 30px 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        max-width: 400px;
+        width: 100%;
+      }
+
+      .auth-box h1 {
+        margin-bottom: 20px;
+        font-size: 24px;
+        text-align: center;
+        color: #e0e0e0;
+      }
+
+      /* Input Group */
+      .input-group {
+        margin-bottom: 20px;
+      }
+
+      .input-group label {
+        display: block;
+        font-size: 14px;
+        margin-bottom: 5px;
+        color: #bdbdbd;
+      }
+
+      .input-group input {
+        width: 100%;
+        padding: 10px;
+        font-size: 14px;
+        border: none;
+        border-radius: 5px;
+        background: #2c2c2c;
+        color: #ffffff;
+        outline: none;
+      }
+
+      .input-group input::placeholder {
+        color: #757575;
+      }
+
+      /* Button */
+      .btn {
+        width: 100%;
+        padding: 10px;
+        font-size: 16px;
+        font-weight: bold;
+        color: #ffffff;
+        background: #6200ea;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+
+      .btn:hover {
+        background: #3700b3;
+      }
+
+      /* Switch Link */
+      .switch-link {
+        text-align: center;
+        margin-top: 10px;
+        font-size: 14px;
+        color: #bdbdbd;
+      }
+
+      .switch-link a {
+        color: #6200ea;
+        text-decoration: none;
+      }
+
+      .switch-link a:hover {
+        text-decoration: underline;
+      }
+
+      /* Image Selection Overlay */
+      .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        visibility: hidden;
+        opacity: 0;
+        transition:
+          opacity 0.3s ease,
+          visibility 0.3s ease;
+      }
+
+      .overlay.active {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      .image-options {
+        display: flex;
+        gap: 15px;
+      }
+
+      .image-options img {
+        width: 100px;
+        height: 100px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+      }
+
+      .image-options img:hover {
+        transform: scale(1.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="auth-box" id="authBox">
+        <h1 id="formTitle">Login</h1>
+        <form id="authForm">
+          <div class="input-group">
+            <label for="username">Username</label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              placeholder="Enter your username"
+              required
+            />
+          </div>
+          <div class="input-group">
+            <label for="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+          <div
+            class="input-group"
+            id="confirmPasswordGroup"
+            style="display: none"
+          >
+            <label for="confirmPassword">Confirm Password</label>
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              placeholder="Confirm your password"
+            />
+          </div>
+          <button type="submit" class="btn" id="submitButton">Login</button>
+          <p class="switch-link">
+            Don't have an account? <a href="#" id="switchLink">Sign up</a>
+          </p>
+        </form>
+      </div>
+    </div>
+
+    <div class="overlay" id="imageOverlay">
+      <div class="image-options" id="imageOptions">
+        <!-- Images will be dynamically loaded here -->
+      </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+      // Element references
+      const formTitle = document.getElementById('formTitle');
+      const authForm = document.getElementById('authForm');
+      const confirmPasswordGroup = document.getElementById(
+        'confirmPasswordGroup',
+      );
+      const submitButton = document.getElementById('submitButton');
+      const switchLink = document.getElementById('switchLink');
+      const imageOverlay = document.getElementById('imageOverlay');
+      const imageOptions = document.getElementById('imageOptions');
+
+      let isLoginMode = true;
+
+      // Placeholder image sources
+      const imageSources = [
+        'Resources/Uden titel.png',
+        'Resources/Uden titel2.png',
+        'Resources/Uden titel3.png',
+        'Resources/Uden titel4.png',
+      ];
+
+      // Switch between login and signup modes
+      switchLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        isLoginMode = !isLoginMode;
+
+        if (isLoginMode) {
+          formTitle.textContent = 'Login';
+          confirmPasswordGroup.style.display = 'none';
+          submitButton.textContent = 'Login';
+          switchLink.textContent = "Don't have an account? Sign up";
+        } else {
+          formTitle.textContent = 'Sign Up';
+          confirmPasswordGroup.style.display = 'block';
+          submitButton.textContent = 'Sign Up';
+          switchLink.textContent = 'Already have an account? Login';
+        }
+      });
+
+      // Form submission logic
+      authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const confirmPassword = document
+          .getElementById('confirmPassword')
+          ?.value.trim();
+
+        if (!username || !password) {
+          alert('Please fill in all required fields.');
           return;
         }
 
-        localStorage.setItem('username', username);
-        localStorage.setItem('password', password);
+        if (!isLoginMode) {
+          // Sign up logic
+          if (password !== confirmPassword) {
+            alert('Passwords do not match.');
+            return;
+          }
 
-        // Show image selection overlay
-        imageOverlay.classList.add('active');
-
-        // Populate image options
-        imageOptions.innerHTML = '';
-        imageSources.forEach((src) => {
-          const img = document.createElement('img');
-          img.src = src;
-          img.alt = 'Image Option';
-          img.addEventListener('click', () => selectImage(src));
-          imageOptions.appendChild(img);
-        });
-      } else {
-        // Login logic
-        await login(); // Call login function here
-      }
-
-      // Clear the form
-      authForm.reset();
-    });
-
-    function selectImage(selectedSrc) {
-      localStorage.setItem('profileImage', selectedSrc);
-      // Hide overlay
-      imageOverlay.classList.remove('active');
-
-      register();
-    }
-
-    async function login() {
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value.trim();
-
-      const socket = io('http://localhost:3000');
-      socket.emit('login', { username, password }, (response) => {
-        if (response.success) {
-          // Only set username and password in localStorage if login is successful
           localStorage.setItem('username', username);
           localStorage.setItem('password', password);
 
-          console.log('Redirecting to chat...');
-          window.location.href = 'chat.html';
-        } else {
-          alert('Login failed: ' + response.message);
-        }
-      });
-    }
+          // Show image selection overlay
+          imageOverlay.classList.add('active');
 
-
-    async function register() {
-      const socket = io('http://localhost:3000');
-      socket.emit('register', {
-        username: localStorage.getItem('username'),
-        password: localStorage.getItem('password'),
-        profileImage: localStorage.getItem('profileImage'),
-      }, (response) => {
-        if (response.success) {
-          window.location.href = 'chat.html';
+          // Populate image options
+          imageOptions.innerHTML = '';
+          imageSources.forEach((src) => {
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = 'Image Option';
+            img.addEventListener('click', () => selectImage(src));
+            imageOptions.appendChild(img);
+          });
         } else {
-          alert('Registration failed: ' + response.message);
+          // Login logic
+          await login(); // Call login function here
         }
+
+        // Clear the form
+        authForm.reset();
       });
-    }
-  </script>
-</body>
+
+      function selectImage(selectedSrc) {
+        localStorage.setItem('profileImage', selectedSrc);
+        // Hide overlay
+        imageOverlay.classList.remove('active');
+
+        register();
+      }
+
+      async function login() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        const socket = io('http://localhost:3000');
+        socket.emit('login', {username, password}, (response) => {
+          if (response.success) {
+            // Only set username and password in localStorage if login is successful
+            localStorage.setItem('username', username);
+            localStorage.setItem('password', password);
+
+            console.log('Redirecting to chat...');
+            window.location.href = 'chat.html';
+          } else {
+            alert('Login failed: ' + response.message);
+          }
+        });
+      }
+
+      async function register() {
+        const socket = io('http://localhost:3000');
+        socket.emit(
+          'register',
+          {
+            username: localStorage.getItem('username'),
+            password: localStorage.getItem('password'),
+            profileImage: localStorage.getItem('profileImage'),
+          },
+          (response) => {
+            if (response.success) {
+              window.location.href = 'chat.html';
+            } else {
+              alert('Registration failed: ' + response.message);
+            }
+          },
+        );
+      }
+    </script>
+  </body>
 </html>
